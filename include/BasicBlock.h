@@ -1,0 +1,127 @@
+/**@file   BasicBlock.h
+ * @author James Molloy <james.molloy@arm.com>
+ * @date   Sun Dec  5 13:16:52 2010
+ * @brief  The nodes in the control flow graph. */
+
+#ifndef BASIC_BLOCK_H
+#define BASIC_BLOCK_H
+
+#include <Variable.h>
+#include <Constant.h>
+#include <Value.h>
+#include <list>
+#include <map>
+#include <vector>
+
+#include <jit/jit.h>
+
+class OperandStack;
+class Function;
+class Instruction;
+class Cell;
+
+/** A block is also a value (used as a jump target) */
+class BasicBlock : public Value {
+public:
+    /** Default constructor. */
+    BasicBlock(Function *parent);
+    ~BasicBlock();
+    
+    /** Loads the argument as a constant, pushing onto the stack. */
+    void LoadConstant(Constant *arg, int &id);
+    /** Loads the named global variable, pushing onto the stack. */
+    void LoadGlobal(std::string arg, int &id);
+    /** Loads the named local (or parameter) variable, pushing onto the stack. */
+    void LoadLocal(std::string arg, int &id);
+
+    /** Stores TOS to the named global. */
+    void StoreGlobal(std::string arg, int &id);
+    /** Stores TOS to the named local. */
+    void StoreLocal(std::string arg, int &id);
+
+    /** Creates a new function or closure, with the given number of default parameters, fished from the stack BEFORE
+        the code object is expected. */
+    void BindClosure(long arg, int &id);
+
+    /** Performs a "standard" function call, with the given number of positional arguments and keyword arguments. */
+    void Call(unsigned char num_positional,
+              unsigned char num_keywords, int &id);
+
+    /** Pops TOS */
+    void Pop(int &id);
+
+    /** Returns TOS. This is a terminator instruction. */
+    void Return(int &id);
+
+    /** Conditional jump. This is a terminator instruction.
+        @param alwaysPop If true, Pop the TOS always; else only pop the item if the branch was NOT taken.
+        @param condition True or false comparison of TOS.
+        @param trueBranch Block to branch to if the condition succeeds.
+        @param falseBranch Block to branch to if the condition fails. */
+    void ConditionalJump(bool alwaysPop, bool condition, BasicBlock *trueBranch, BasicBlock *falseBranch, int &id);
+
+    /** Jump to block. This is a terminator instruction. */
+    void Jump(BasicBlock *branch, int &id);
+
+    /** Perform a binary operation on TOS and TOS1 */
+    void BinaryOp(std::string op, int &id);
+
+    /** Get an attribute of TOS. */
+    void GetAttr(std::string attr, int &id);
+
+    void Dup();
+    
+    void BuildTuple(int n, int &id);
+
+    void BeginCatch(int &id);
+
+    void Compare(int op, int &id);
+
+    void PrintItem(int &id);
+    void PrintNewline(int &id);
+
+    void ReRaise(int &id);
+
+    virtual const std::string Repr();
+
+    void SetUnwindBlock(BasicBlock *uw) {
+        m_unwind_block = uw;
+    }
+
+    void LJ_Codegen();
+    jit_label_t *LJ_GetLabel();
+
+protected:
+    char GetWart() {
+        return ':';
+    }
+    
+private:
+    /** Successor blocks */
+    BasicBlock *m_successors[2];
+
+    /** How many successors the block has. */
+    int m_num_successors;
+
+    /** The stack - only used during block creation. */
+    OperandStack *m_stack;
+
+    std::map<std::string,Value*> m_globals, m_locals;
+
+    /** Function parent. */
+    Function *m_fn;
+
+    /** All instructions in the block. */
+    std::vector<Instruction*> m_all_instructions;
+
+    std::vector<Instruction*> m_dfg_roots;
+    std::vector<Value*> m_dfg_leafs;
+    std::map<std::string,Value*> m_store_global_roots;
+    std::map<std::string,Value*> m_store_local_roots;
+
+    BasicBlock *m_unwind_block;
+
+    jit_label_t m_jit_label;
+};
+
+#endif
