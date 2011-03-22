@@ -156,8 +156,10 @@ void Code::Walk(Function *f) {
         BasicBlock *oldb = b;
         BasicBlock *b2 = blocks[i];
         if(b2 != NULL) {
-            if(!ignore)
+            if(!ignore && b2 != b) {
                 b->Jump(b2, id);
+                b2->AddPredecessor(b, id);
+            }
             b = b2;
         }
         ignore = false;
@@ -232,6 +234,10 @@ void Code::Walk(Function *f) {
                 assert(bl1);
                 assert(bl2);
                 b->ConditionalJump(true, false, bl1, bl2, id);
+
+                bl1->AddPredecessor(b, id);
+                bl2->AddPredecessor(b, id);
+
                 b = bl2;
                 break;
             }
@@ -242,6 +248,10 @@ void Code::Walk(Function *f) {
                 assert(bl1);
                 assert(bl2);
                 b->ConditionalJump(true, true, bl1, bl2, id);
+
+                bl1->AddPredecessor(b, id);
+                bl2->AddPredecessor(b, id);
+
                 b = bl2;
                 break;
             }
@@ -250,6 +260,8 @@ void Code::Walk(Function *f) {
                 BasicBlock *bl = blocks[arg+i];
                 assert(bl);
                 b->Jump(bl, id);
+
+                bl->AddPredecessor(b, id);
                 ignore = true;
                 break;
             }
@@ -273,14 +285,12 @@ void Code::Walk(Function *f) {
                     }
                 }
                 b->SetUnwindBlock(blocks[i+arg]);
-                std::cerr << "Setting unwind block to " << blocks[i+arg] << "\n";
                 break;
             }
 
-            case POP_BLOCK: {
-                //b->SetExceptionLevel(oldb->GetExceptionLevel()-1);
+
+            case POP_BLOCK:
                 break;
-            }
 
             case BUILD_TUPLE:
                 b->BuildTuple(arg, id);

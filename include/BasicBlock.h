@@ -82,6 +82,8 @@ public:
 
     void ReRaise(int &id);
 
+    void AddPredecessor(BasicBlock *b, int &id);
+
     virtual const std::string Repr();
 
     void SetUnwindBlock(BasicBlock *uw) {
@@ -99,6 +101,8 @@ protected:
 private:
     /** Successor blocks */
     BasicBlock *m_successors[2];
+
+    std::list<BasicBlock*> m_predecessors;
 
     /** How many successors the block has. */
     int m_num_successors;

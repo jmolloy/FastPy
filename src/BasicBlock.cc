@@ -13,6 +13,7 @@
 
 #include <cassert>
 #include <sstream>
+#include <iostream>
 
 BasicBlock::BasicBlock(Function *parent) :
     m_num_successors(0), m_stack(new OperandStack()), m_fn(parent),
@@ -205,7 +206,7 @@ void BasicBlock::BuildTuple(int n, int &id) {
 }
 
 void BasicBlock::BeginCatch(int &id) {
-    Instruction *c = new ::BeginCatch_GetType(++id);
+    Instruction *c = new ::BeginCatch_GetTraceback(++id);
     m_stack->Push(c);
     m_all_instructions.push_back(c);
 
@@ -213,9 +214,10 @@ void BasicBlock::BeginCatch(int &id) {
     m_stack->Push(c);
     m_all_instructions.push_back(c);
 
-    c = new ::BeginCatch_GetTraceback(++id);
+    c = new ::BeginCatch_GetType(++id);
     m_stack->Push(c);
     m_all_instructions.push_back(c);
+
 }
 
 void BasicBlock::Compare(int op, int &id) {
@@ -239,13 +241,61 @@ void BasicBlock::ReRaise(int &id) {
     m_all_instructions.push_back(i);
 }
 
+void BasicBlock::AddPredecessor(BasicBlock *b, int &id) {
+    assert(b != this);
+
+    m_predecessors.push_back(b);
+
+    std::list<Value*> stack, stack2;
+
+    Value *v;
+    while( (v=b->m_stack->Pop()) != NULL ) {
+        Value *v2 = m_stack->Pop();
+        if(v2) {
+            if(dynamic_cast<Phi*>(v2) != 0) {
+                Phi *p = dynamic_cast<Phi*>(v2);
+                p->AddIncoming(v, b);
+                stack2.push_back(v2);
+            } else {
+                Phi *p = new Phi(++id);
+                p->AddIncoming(v, b);
+                stack2.push_back(p);
+            }
+        } else {
+            stack2.push_back(v);
+        }
+        stack.push_back(v);
+    }
+
+    while(stack.size()) {
+        b->m_stack->Push(stack.back());
+        m_stack->Push(stack2.back());
+        stack.pop_back();
+        stack2.pop_back();
+    }
+}
+
 const std::string BasicBlock::Repr() {
     std::stringstream ss;
     if(GetId() != -1) {
-        ss << GetId() << ":\n";
+        ss << GetId() << ": ";
     } else {
-        ss << "?:\n";
+        ss << "?: ";
     }
+
+    ss << "                                # Preds: [";
+    bool first = true;
+    for(std::list<BasicBlock*>::iterator it = m_predecessors.begin();
+        it != m_predecessors.end();
+        ++it) {
+        if(first) {
+            first = false;
+        } else {
+            ss << ", ";
+        }
+        ss << (*it)->RefRepr();
+    }
+    ss << "]\n";
 
     for(std::vector<Instruction*>::iterator it = m_all_instructions.begin();
         it != m_all_instructions.end();

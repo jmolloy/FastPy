@@ -164,6 +164,19 @@ public:
     }
 
 };
+class Phi : public Instruction {
+public:
+    Phi(int id) :
+        Instruction("phi", id) {
+    }
 
+    void AddIncoming(Value *v, BasicBlock *src) {
+        m_srcs.push_back(std::make_pair(v, src));
+    }
+
+    virtual const std::string Repr();
+
+    std::list< std::pair<Value*,BasicBlock*> > m_srcs;
+};
 
 #endif

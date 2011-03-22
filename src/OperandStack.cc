@@ -5,6 +5,8 @@
 
 #include <OperandStack.h>
 #include <cassert>
+#include <iostream>
+#include <Value.h>
 
 OperandStack::OperandStack() {
 }
@@ -22,7 +24,6 @@ void OperandStack::Push(Value *x) {
 }
 
 Value *OperandStack::Pop() {
-//    assert(!m_stack.empty());
     if(!m_stack.empty()) { 
         Value *x = m_stack.front();
         m_stack.pop_front();
@@ -33,9 +34,12 @@ Value *OperandStack::Pop() {
 }
 
 Value *OperandStack::Peek() {
-//    assert(!m_stack.empty());
-    Value *x = m_stack.front();
-    return x;
+    if(m_stack.empty()) {
+        return NULL;
+    } else {
+        Value *x = m_stack.front();
+        return x;
+    }
 }
 
 

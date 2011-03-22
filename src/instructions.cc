@@ -1,6 +1,8 @@
 #include <instructions.h>
 #include <sstream>
 
+#include <BasicBlock.h>
+
 const std::string Call::Repr() {
     std::stringstream ss;
     ss << "    " << RefRepr() << " = call " << m_callee->RefRepr() << " (";
@@ -54,5 +56,22 @@ const std::string Compare::Repr() {
 
     std::stringstream ss;
     ss << "    " << RefRepr() << " = compare " << opname << ", " << m_args[0]->RefRepr() << ", " << m_args[1]->RefRepr();
+    return ss.str();
+}
+
+const std::string Phi::Repr() {
+    std::stringstream ss;
+    ss << "    " << RefRepr() << " = phi ";
+    bool first = true;
+    for(std::list< std::pair<Value*,BasicBlock*> >::iterator it = m_srcs.begin();
+        it != m_srcs.end();
+        ++it) {
+        if(first) {
+            first = false;
+        } else {
+            ss << ", ";
+        }
+        ss << it->second->RefRepr() << " " << it->first->RefRepr();
+    }
     return ss.str();
 }
