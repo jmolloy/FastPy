@@ -18,6 +18,7 @@
 BasicBlock::BasicBlock(Function *parent) :
     m_num_successors(0), m_stack(new OperandStack()), m_fn(parent),
     m_jit_label(jit_label_undefined),
+    m_jit_end_label(jit_label_undefined),
     m_unwind_block(NULL)
 {
     m_successors[0] = NULL;
@@ -329,8 +330,14 @@ void BasicBlock::LJ_Codegen() {
         ++it) {
         (*it)->LJ_Codegen(func, m_fn);
     }
+
+    jit_insn_label(func, &m_jit_end_label);
 }
 
 jit_label_t *BasicBlock::LJ_GetLabel() {
     return &m_jit_label;
+}
+
+jit_label_t *BasicBlock::LJ_GetEndLabel() {
+    return &m_jit_end_label;
 }

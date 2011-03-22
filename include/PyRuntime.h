@@ -10,6 +10,8 @@ extern "C" {
     void *PyRuntime_CheckCall(PyObject *obj);
 
     PyObject *PyRuntime_Print(PyObject *obj);
+    PyObject *PyRuntime_PrintItem(PyObject *obj);
+    PyObject *PyRuntime_PrintNewline();
 
 }
 

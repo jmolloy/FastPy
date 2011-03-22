@@ -148,14 +148,14 @@ public:
         Instruction("print-item", id) {
         m_args.push_back(v);
     }
-
+    virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
 };
 class PrintNewline : public Instruction {
 public:
     PrintNewline(int id) :
         Instruction("print-newline", id) {
     }
-
+    virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
 };
 class ReRaise : public Instruction {
 public:

@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <jit/jit.h>
+
 void *PyRuntime_CheckCall(PyObject *obj) {
     if(obj == NULL) {
         /**@todo Throw exception */
@@ -30,6 +32,20 @@ PyObject *PyRuntime_Print(PyObject *obj) {
         abort();
     }
 
+    return PyNone_Create();
+}
+PyObject *PyRuntime_PrintItem(PyObject *obj) {
+    if(obj->tag == Type::TagFor(Type::GetStringTy())) {
+        printf("%s", ((PyString*)obj)->str );
+    } else {
+        /** @todo Throw exception */
+        abort();
+    }
+
+    return PyNone_Create();
+}
+PyObject *PyRuntime_PrintNewline() {
+    printf("\n");
     return PyNone_Create();
 }
 

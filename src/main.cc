@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
     jit_context_build_start(ctx);
     __main__->LJ_Codegen(ctx);
     jit_context_build_end(ctx);
-
+//    exit(0);
     unsigned long result;
     jit_function_apply(__main__->GetMainFunction()->LJ_Codegen(ctx),
                        0,

@@ -5,6 +5,8 @@
 #include <sstream>
 #include <Module.h>
 
+#include <stdlib.h>
+
 std::map<std::string, Function*> g_functions;
 
 Function::Function(std::string name, Code *code, Module *module) :
@@ -68,6 +70,17 @@ jit_function_t Function::LJ_Codegen(jit_context_t ctx) {
 
     m_jit_function = jit_function_create(ctx, signature);
 
+    bool uses_catcher = false;
+    for(std::vector<BasicBlock*>::iterator it = m_blocks.begin();
+        it != m_blocks.end();
+        ++it) {
+        if((*it)->GetUnwindBlock()) {
+            jit_insn_uses_catcher(m_jit_function);
+            uses_catcher = true;
+            break;
+        }
+    }
+
     GetEntryBlock()->LJ_Codegen();
     for(std::vector<BasicBlock*>::iterator it = m_blocks.begin();
         it != m_blocks.end();
@@ -75,6 +88,22 @@ jit_function_t Function::LJ_Codegen(jit_context_t ctx) {
         (*it)->LJ_Codegen();
     }
 
+    if(uses_catcher) {
+        jit_insn_start_catcher(m_jit_function);
+
+        for(std::vector<BasicBlock*>::iterator it = m_blocks.begin();
+            it != m_blocks.end();
+            ++it) {
+            if((*it)->GetUnwindBlock()) {
+                jit_insn_branch_if_pc_not_in_range(m_jit_function,
+                                                   *(*it)->LJ_GetLabel(),
+                                                   *(*it)->LJ_GetEndLabel(),
+                                                   (*it)->GetUnwindBlock()->LJ_GetLabel());
+            }
+            jit_insn_rethrow_unhandled(m_jit_function);
+        }
+
+    }
     jit_function_compile(m_jit_function);
 
     return m_jit_function;

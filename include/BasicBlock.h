@@ -89,9 +89,13 @@ public:
     void SetUnwindBlock(BasicBlock *uw) {
         m_unwind_block = uw;
     }
+    BasicBlock *GetUnwindBlock() {
+        return m_unwind_block;
+    }
 
     void LJ_Codegen();
     jit_label_t *LJ_GetLabel();
+    jit_label_t *LJ_GetEndLabel();
 
 protected:
     char GetWart() {
@@ -125,7 +129,7 @@ private:
 
     BasicBlock *m_unwind_block;
 
-    jit_label_t m_jit_label;
+    jit_label_t m_jit_label, m_jit_end_label;
 };
 
 #endif
