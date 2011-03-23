@@ -54,7 +54,7 @@ jit_value_t LoadGlobal::_LJ_Codegen(jit_function_t func, Function *f) {
         hash_value = jit_value_create_nint_constant(func, jit_type_nuint, 2);
     }
 
-    return _LJ_Call(func, "PyDict_lookup", (void*)&PyDict_Lookup, g, hash_value, m_args[0]->LJ_Codegen(func, f));
+    return _LJ_Call(func, "FPyDict_lookup", (void*)&FPyDict_Lookup, g, hash_value, m_args[0]->LJ_Codegen(func, f));
 }
 
 jit_value_t Return::_LJ_Codegen(jit_function_t func, Function *f) {
@@ -79,7 +79,7 @@ jit_value_t Call::_LJ_Codegen(jit_function_t func, Function *f) {
                                                1);
 
     jit_value_t arg = m_callee->LJ_Codegen(func, f);
-    jit_value_t callee = jit_insn_call_native(func, "PyRuntime_CheckCall", (void*)&PyRuntime_CheckCall, sig, &arg, 1, 0);
+    jit_value_t callee = jit_insn_call_native(func, "FPyRuntime_CheckCall", (void*)&FPyRuntime_CheckCall, sig, &arg, 1, 0);
 
     /* Then call the function itself */
 
@@ -95,18 +95,18 @@ jit_value_t Call::_LJ_Codegen(jit_function_t func, Function *f) {
 }
 
 jit_value_t PrintItem::_LJ_Codegen(jit_function_t func, Function *f) {
-    return _LJ_Call(func, "PyRuntime_PrintItem", (void*)&PyRuntime_PrintItem, m_args[0]->LJ_Codegen(func, f));
+    return _LJ_Call(func, "FPyRuntime_PrintItem", (void*)&FPyRuntime_PrintItem, m_args[0]->LJ_Codegen(func, f));
 }
 jit_value_t PrintNewline::_LJ_Codegen(jit_function_t func, Function *f) {
-    return _LJ_Call(func, "PyRuntime_PrintNewline", (void*)&PyRuntime_PrintNewline);
+    return _LJ_Call(func, "FPyRuntime_PrintNewline", (void*)&FPyRuntime_PrintNewline);
 }
 
 
 jit_value_t ConstantNone::_LJ_Codegen(jit_function_t func, Function *f) {
-    static PyObject *obj = PyNone_Create();
+    static FPyObject *obj = FPyNone_Create();
     return jit_value_create_nint_constant(func, jit_type_nuint, (jit_nuint)obj);
 }
 jit_value_t ConstantString::_LJ_Codegen(jit_function_t func, Function *f) {
-    PyObject *obj = PyString_Create(str().c_str());
+    FPyObject *obj = FPyString_Create(str().c_str());
     return jit_value_create_nint_constant(func, jit_type_nuint, (jit_nuint)obj);
 }

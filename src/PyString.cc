@@ -3,10 +3,10 @@
 
 #include <string.h>
 
-PyString *PyString_Create(const char *str) {
+FPyString *FPyString_Create(const char *str) {
     str = strdup(str);
 
-    PyString *x = new PyString();
+    FPyString *x = new FPyString();
     x->tag = Type::TagFor(Type::GetStringTy());
     x->str = str;
 

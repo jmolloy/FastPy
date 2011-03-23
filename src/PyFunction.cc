@@ -1,8 +1,8 @@
 #include <PyFunction.h>
 #include <Type.h>
 
-PyFunction *PyFunction_Create(void *fn) {
-    PyFunction *f = new PyFunction();
+FPyFunction *FPyFunction_Create(void *fn) {
+    FPyFunction *f = new FPyFunction();
     f->tag = Type::TagFor(Type::GetFunctionTy());
     f->fn = fn;
 

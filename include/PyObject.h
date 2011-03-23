@@ -6,9 +6,11 @@
 class Type;
 
 /** Base class of all objects actually used in the runtime. */
-struct PyObject {
+struct FPyObject {
     /** Type ID */
     uint16_t tag;
+    /** Attributes as a special dict */
+    struct FPyAttributeDict *attrs;
 };
 
 #endif

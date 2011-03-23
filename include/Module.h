@@ -19,7 +19,7 @@ public:
         return m_name;
     }
     
-    PyDict *GetGlobals() {
+    FPyDict *GetGlobals() {
         return m_globals;
     }
 
@@ -31,7 +31,7 @@ private:
     std::string m_name;
     Function *m_main;
     
-    PyDict *m_globals;
+    FPyDict *m_globals;
 };
 
 #endif

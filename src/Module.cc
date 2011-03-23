@@ -10,7 +10,7 @@
 
 Module::Module(const std::string &name, Code *c) :
     m_name(name),
-    m_globals(PyDict_Create()) {
+    m_globals(FPyDict_Create()) {
     std::stringstream ss;
     ss << name << "_main";
 

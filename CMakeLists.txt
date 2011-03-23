@@ -28,8 +28,9 @@ set(SRCS
 
 find_library(LIBJIT jit)
 find_path(LIBJIT_INC jit/jit.h)
+#find_path(PYTHON_INC Python.h)
 
-include_directories(${LIBJIT_INC})
+include_directories(${LIBJIT_INC} ) #${PYTHON_INC})
 include_directories(include)
 add_executable(fastpy ${SRCS})
 target_link_libraries(fastpy ${LIBJIT})

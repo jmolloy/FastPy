@@ -10,7 +10,7 @@
 
 #include <jit/jit.h>
 
-void *PyRuntime_CheckCall(PyObject *obj) {
+void *FPyRuntime_CheckCall(FPyObject *obj) {
     if(obj == NULL) {
         /**@todo Throw exception */
         abort();
@@ -18,37 +18,37 @@ void *PyRuntime_CheckCall(PyObject *obj) {
 
     static uint16_t fn_tag = Type::TagFor(Type::GetFunctionTy());
     if(obj->tag == fn_tag) {
-        return ((PyFunction*)obj)->fn;
+        return ((FPyFunction*)obj)->fn;
     }
     /** @todo Throw exception */
     abort();
 }
 
-PyObject *PyRuntime_Print(PyObject *obj) {
+FPyObject *FPyRuntime_Print(FPyObject *obj) {
     if(obj->tag == Type::TagFor(Type::GetStringTy())) {
-        printf("%s\n", ((PyString*)obj)->str );
+        printf("%s\n", ((FPyString*)obj)->str );
     } else {
         /** @todo Throw exception */
         abort();
     }
 
-    return PyNone_Create();
+    return FPyNone_Create();
 }
-PyObject *PyRuntime_PrintItem(PyObject *obj) {
+FPyObject *FPyRuntime_PrintItem(FPyObject *obj) {
     if(obj->tag == Type::TagFor(Type::GetStringTy())) {
-        printf("%s", ((PyString*)obj)->str );
+        printf("%s", ((FPyString*)obj)->str );
     } else {
         /** @todo Throw exception */
         abort();
     }
 
-    return PyNone_Create();
+    return FPyNone_Create();
 }
-PyObject *PyRuntime_PrintNewline() {
+FPyObject *FPyRuntime_PrintNewline() {
     printf("\n");
-    return PyNone_Create();
+    return FPyNone_Create();
 }
 
-void PopulateDictWithBuiltins(PyDict *dict) {
-    PyDict_Insert(dict, PyString_Create("print"), PyFunction_Create((void*)&PyRuntime_Print));
+void PopulateDictWithBuiltins(FPyDict *dict) {
+    FPyDict_Insert(dict, FPyString_Create("print"), FPyFunction_Create((void*)&FPyRuntime_Print));
 }

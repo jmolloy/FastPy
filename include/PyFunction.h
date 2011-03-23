@@ -3,13 +3,13 @@
 
 #include <PyObject.h>
 
-struct PyFunction : public PyObject {
+struct FPyFunction : public FPyObject {
     void *fn;
 };
 
 extern "C" {
 
-PyFunction *PyFunction_Create(void *fn);
+FPyFunction *FPyFunction_Create(void *fn);
 
 }
 

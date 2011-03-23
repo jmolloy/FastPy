@@ -1,6 +1,6 @@
 #include <PyNone.h>
 
-PyNone *PyNone_Create() {
+FPyNone *FPyNone_Create() {
     /* None is pretty simple to implement... */
     return 0;
 }

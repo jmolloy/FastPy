@@ -3,18 +3,18 @@
 
 #include <PyObject.h>
 
-struct PyDict;
+struct FPyDict;
 
 extern "C" {
 
-    void *PyRuntime_CheckCall(PyObject *obj);
+    void *FPyRuntime_CheckCall(FPyObject *obj);
 
-    PyObject *PyRuntime_Print(PyObject *obj);
-    PyObject *PyRuntime_PrintItem(PyObject *obj);
-    PyObject *PyRuntime_PrintNewline();
+    FPyObject *FPyRuntime_Print(FPyObject *obj);
+    FPyObject *FPyRuntime_PrintItem(FPyObject *obj);
+    FPyObject *FPyRuntime_PrintNewline();
 
 }
 
-void PopulateDictWithBuiltins(PyDict *dict);
+void PopulateDictWithBuiltins(FPyDict *dict);
 
 #endif

@@ -3,13 +3,13 @@
 
 #include <PyObject.h>
 
-struct PyString : public PyObject {
+struct FPyString : public FPyObject {
     const char *str;
 };
 
 extern "C" {
 
-PyString *PyString_Create(const char *str);
+FPyString *FPyString_Create(const char *str);
 
 }
 

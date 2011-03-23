@@ -3,12 +3,12 @@
 
 #include <PyObject.h>
 
-struct PyNone : public PyObject {
+struct FPyNone : public FPyObject {
 };
 
 extern "C" {
 
-PyNone *PyNone_Create();
+FPyNone *FPyNone_Create();
 
 }
 
