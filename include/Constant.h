@@ -11,7 +11,7 @@
 class Constant : public Value {
 public:
     static class ConstantBool   *GetBool(bool b);
-    static class ConstantInt    *GetInt(int n);
+    static class ConstantInt    *GetInt(long n);
     static class ConstantInt64  *GetInt64(int64_t n);
     static class ConstantFloat  *GetFloat(double n);
     static class ConstantString *GetString(const std::string &str);

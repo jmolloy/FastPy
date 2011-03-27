@@ -24,6 +24,9 @@ set(SRCS
   src/PyNone.cc
   src/PyRuntime.cc
   src/PyFunction.cc
+  src/Object.cc
+  src/Exception.cc
+  src/Traceback.cc
 )
 
 find_library(LIBJIT jit)

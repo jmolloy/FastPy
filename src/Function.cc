@@ -7,6 +7,10 @@
 
 #include <stdlib.h>
 
+#include <jit/jit-dump.h>
+
+extern jit_context_t g_lj_ctx;
+
 std::map<std::string, Function*> g_functions;
 
 Function::Function(std::string name, Code *code, Module *module) :
@@ -55,6 +59,8 @@ jit_function_t Function::LJ_Codegen(jit_context_t ctx) {
         return m_jit_function;
     }
 
+    jit_context_build_start(ctx);
+
     /**@todo Types */
     int nargs = m_code->m_argcount + m_code->m_kwonlyargcount;
     jit_type_t *args = new jit_type_t[nargs];
@@ -69,6 +75,7 @@ jit_function_t Function::LJ_Codegen(jit_context_t ctx) {
     delete [] args;
 
     m_jit_function = jit_function_create(ctx, signature);
+    jit_function_set_meta(m_jit_function, 0, (void*)this, NULL, 0);
 
     bool uses_catcher = false;
     for(std::vector<BasicBlock*>::iterator it = m_blocks.begin();
@@ -104,7 +111,19 @@ jit_function_t Function::LJ_Codegen(jit_context_t ctx) {
         }
 
     }
+    jit_dump_function(stdout, m_jit_function, GetName().c_str());
+
     jit_function_compile(m_jit_function);
 
+    jit_context_build_end(ctx);
+
     return m_jit_function;
+}
+
+void *Function::GetFnPtr() {
+    return jit_function_to_closure(LJ_Codegen(g_lj_ctx));
+}
+
+const std::string BuiltinFunction::Repr() {
+    return "<built-in function>";
 }

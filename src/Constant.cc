@@ -9,8 +9,8 @@ ConstantBool *Constant::GetBool(bool b) {
     return (b) ? &t : &f;
 }
 
-ConstantInt *Constant::GetInt(int n) {
-    static std::map<int,ConstantInt*> m;
+ConstantInt *Constant::GetInt(long n) {
+    static std::map<long,ConstantInt*> m;
     ConstantInt *c = m[n];
     if(!c) {
         c = new ConstantInt(n);

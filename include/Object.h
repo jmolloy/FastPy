@@ -27,6 +27,34 @@ public:
 
     Object() : m_id(-1) {}
 
+    enum VtableIdx {
+        idx__Hash__ = 0,
+        idx__Repr__ = 1,
+        idx__Str__ = 2,
+        idx__Cmp__ = 3,
+        idx__Getattr__ = 4,
+        idx__Setattr__ = 5,
+        idx__Hasattr__ = 6,
+        idx__StoreSubscr__ = 7,
+        idx__Subscr__ = 8,
+        idx__DelSubscr__ = 9
+    };  
+
+    /*
+     * Virtual functions to be implemented by subclasses.
+     */
+    virtual Object *__Hash__();
+    virtual Object *__Repr__();
+    virtual Object *__Str__();
+    virtual Object *__Cmp__(Object *other);
+    virtual Object *__Getattr__(Object *attr);
+    virtual Object *__Setattr__(Object *attr, Object *value);
+    virtual Object *__Hasattr__(Object *attr);
+    virtual Object *__StoreSubscr__(Object *idx, Object *value);
+    virtual Object *__Subscr__(Object *idx);
+    virtual Object *__DelSubscr__(Object *idx);
+
+
     /** Provide a string representation of the object. */
     virtual const std::string Repr() = 0;
 
@@ -104,7 +132,7 @@ public:
     }
 
 protected:
-    /** Return the 'wart' for this object type ('%', '@', '$') */
+    /** Return the 'wart' for this object type ('%', '@', '$', ':') */
     virtual char GetWart() = 0;
     virtual bool IsValue() {
         return false;

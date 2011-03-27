@@ -17,7 +17,7 @@ Code::Code(long argcount, long kwonlyargcount, long nlocals, long stacksize,
     m_argcount(argcount), m_kwonlyargcount(kwonlyargcount), m_nlocals(nlocals),
     m_stacksize(stacksize), m_flags(flags), m_code(code), m_consts(consts),
     m_names(names), m_varnames(varnames), m_freevars(freevars), m_cellvars(cellvars),
-    m_filename(filename)
+    m_filename(filename), m_name(name), m_lnotab(lnotab)
 {
     SetType(Type::GetCodeTy());
 }
@@ -57,6 +57,27 @@ unsigned char Code::NextOp(long &i, long &arg) {
     }
 
     return opcode;
+}
+
+int Code::GetLineNo(int offs) {
+    /* http://hg.python.org/cpython/file/default/Objects/lnotab_notes.txt */
+
+    int lineno = m_firstlineno+1;
+    int addr = 0;
+    unsigned char *lnotab = m_lnotab->GetPtr();
+    int i = 0;
+
+    while(i < m_lnotab->m_sz) {
+        unsigned char addr_incr = lnotab[i++];
+        unsigned char line_incr = lnotab[i++];
+
+        addr += addr_incr;
+        if(addr > offs) {
+            return lineno;
+        }
+        lineno += line_incr;
+    }
+    return lineno;
 }
 
 void Code::Disassemble(std::ostream &s) {
@@ -157,7 +178,7 @@ void Code::Walk(Function *f) {
         BasicBlock *b2 = blocks[i];
         if(b2 != NULL) {
             if(!ignore && b2 != b) {
-                b->Jump(b2, id);
+                b->Jump(b2, id, i);
                 b2->AddPredecessor(b, id);
             }
             b = b2;
@@ -168,6 +189,8 @@ void Code::Walk(Function *f) {
             b->BeginCatch(id);
         }
 
+        int insn_bytecode_offset = i;
+
         long arg;
         unsigned char opcode = NextOp(i, arg);
 
@@ -176,48 +199,48 @@ void Code::Walk(Function *f) {
                 return;
 
             case PRINT_ITEM:
-                b->PrintItem(id);
+                b->PrintItem(id, insn_bytecode_offset);
                 break;
 
             case PRINT_NEWLINE:
-                b->PrintNewline(id);
+                b->PrintNewline(id, insn_bytecode_offset);
                 break;
 
             case LOAD_CONST:
-                b->LoadConstant(Constant::From(m_consts->Get(arg)), id);
+                b->LoadConstant(Constant::From(m_consts->Get(arg)), id, insn_bytecode_offset);
                 break;
 
             case LOAD_NAME:
-                b->LoadGlobal(ConstantString::From(m_names->Get(arg))->str(), id);
+                b->LoadGlobal(ConstantString::From(m_names->Get(arg))->str(), id, insn_bytecode_offset);
                 break;
 
             case LOAD_GLOBAL:
-                b->LoadGlobal(ConstantString::From(m_names->Get(arg))->str(), id);
+                b->LoadGlobal(ConstantString::From(m_names->Get(arg))->str(), id, insn_bytecode_offset);
                 break;
 
             case LOAD_FAST:
-                b->LoadLocal(ConstantString::From(m_varnames->Get(arg))->str(), id);
+                b->LoadLocal(ConstantString::From(m_varnames->Get(arg))->str(), id, insn_bytecode_offset);
                 break;
 
             case STORE_NAME:
-                b->StoreGlobal(ConstantString::From(m_names->Get(arg))->str(), id);
+                b->StoreGlobal(ConstantString::From(m_names->Get(arg))->str(), id, insn_bytecode_offset);
                 break;
 
             case STORE_GLOBAL:
-                b->StoreGlobal(ConstantString::From(m_names->Get(arg))->str(), id);
+                b->StoreGlobal(ConstantString::From(m_names->Get(arg))->str(), id, insn_bytecode_offset);
                 break;
 
             case STORE_FAST:
-                b->StoreLocal(ConstantString::From(m_varnames->Get(arg))->str(), id);
+                b->StoreLocal(ConstantString::From(m_varnames->Get(arg))->str(), id, insn_bytecode_offset);
                 break;
 
             // case MAKE_FUNCTION:
-            //     b->BindClosure(arg /*Num Default Parameters*/, id);
+            //     b->BindClosure(arg /*Num Default Parameters*/, id, insn_bytecode_offset);
             //     break;
 
             case CALL_FUNCTION:
                 b->Call( arg&0xFF, /* Num Positional Parameters */
-                         (arg>>8)&0xFF, id); /* Num Keyword Parameters */
+                         (arg>>8)&0xFF, id, insn_bytecode_offset); /* Num Keyword Parameters */
                 break;
 
             case POP_TOP:
@@ -225,7 +248,7 @@ void Code::Walk(Function *f) {
                 break;
 
             case RETURN_VALUE:
-                b->Return(id);
+                b->Return(id, insn_bytecode_offset);
                 break;
 
             case POP_JUMP_IF_FALSE: {
@@ -233,7 +256,7 @@ void Code::Walk(Function *f) {
                 BasicBlock *bl2 = blocks[i];
                 assert(bl1);
                 assert(bl2);
-                b->ConditionalJump(true, false, bl1, bl2, id);
+                b->ConditionalJump(true, false, bl1, bl2, id, insn_bytecode_offset);
 
                 bl1->AddPredecessor(b, id);
                 bl2->AddPredecessor(b, id);
@@ -247,7 +270,7 @@ void Code::Walk(Function *f) {
                 BasicBlock *bl2 = blocks[i];
                 assert(bl1);
                 assert(bl2);
-                b->ConditionalJump(true, true, bl1, bl2, id);
+                b->ConditionalJump(true, true, bl1, bl2, id, insn_bytecode_offset);
 
                 bl1->AddPredecessor(b, id);
                 bl2->AddPredecessor(b, id);
@@ -259,7 +282,7 @@ void Code::Walk(Function *f) {
             case JUMP_FORWARD: {
                 BasicBlock *bl = blocks[arg+i];
                 assert(bl);
-                b->Jump(bl, id);
+                b->Jump(bl, id, insn_bytecode_offset);
 
                 bl->AddPredecessor(b, id);
                 ignore = true;
@@ -267,11 +290,11 @@ void Code::Walk(Function *f) {
             }
 
             case BINARY_ADD:
-                b->BinaryOp("__add__", id);
+                b->BinaryOp("__add__", id, insn_bytecode_offset);
                 break;
 
             case LOAD_ATTR:
-                b->GetAttr(ConstantString::From(m_names->Get(arg))->str(), id);
+                b->GetAttr(ConstantString::From(m_names->Get(arg))->str(), id, insn_bytecode_offset);
                 break;
 
             case SETUP_EXCEPT: {
@@ -293,7 +316,7 @@ void Code::Walk(Function *f) {
                 break;
 
             case BUILD_TUPLE:
-                b->BuildTuple(arg, id);
+                b->BuildTuple(arg, id, insn_bytecode_offset);
                 break;
 
             case DUP_TOP:
@@ -301,11 +324,11 @@ void Code::Walk(Function *f) {
                 break;
 
             case COMPARE_OP:
-                b->Compare(arg, id);
+                b->Compare(arg, id, insn_bytecode_offset);
                 break;
 
             case END_FINALLY:
-                b->ReRaise(id);
+                b->ReRaise(id, insn_bytecode_offset);
                 break;
                 
             default:

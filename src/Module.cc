@@ -10,7 +10,7 @@
 
 Module::Module(const std::string &name, Code *c) :
     m_name(name),
-    m_globals(FPyDict_Create()) {
+    m_globals(new Dict()) {
     std::stringstream ss;
     ss << name << "_main";
 
@@ -31,5 +31,4 @@ void Module::Dump() {
 
 void Module::LJ_Codegen(jit_context_t ctx) {
     jit_function_t f = m_main->LJ_Codegen(ctx);
-    jit_dump_function(stdout, f, m_main->GetName().c_str());
 }

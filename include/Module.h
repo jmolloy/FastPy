@@ -3,7 +3,7 @@
 
 #include <string>
 #include <Function.h>
-#include <PyDict.h>
+#include <variables.h>
 
 /** A container class for module-level functions and classes. */
 class Module {
@@ -19,7 +19,7 @@ public:
         return m_name;
     }
     
-    FPyDict *GetGlobals() {
+    Dict *GetGlobals() {
         return m_globals;
     }
 
@@ -31,7 +31,7 @@ private:
     std::string m_name;
     Function *m_main;
     
-    FPyDict *m_globals;
+    Dict *m_globals;
 };
 
 #endif

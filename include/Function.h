@@ -17,7 +17,7 @@ class Function : public Constant {
 public:
     /** Creates a new function with the given identifying name. */
     Function(std::string name, Code *code, Module *module);
-    ~Function();
+    virtual ~Function();
 
     /** Returns the entry block of this function. */
     BasicBlock *GetEntryBlock() {
@@ -44,6 +44,8 @@ public:
 
     jit_function_t LJ_Codegen(jit_context_t ctx=0);
 
+    virtual void *GetFnPtr();
+
 private:
     /** Entry block */
     BasicBlock *m_entry_block;
@@ -63,6 +65,23 @@ private:
     std::vector<std::string> m_arguments;
 
     jit_function_t m_jit_function;
+};
+
+class BuiltinFunction : public Function {
+public:
+    BuiltinFunction(void *fn) :
+        Function("<builtin>", NULL, NULL),
+        m_fn(fn) {
+    }
+    
+    virtual void *GetFnPtr() {
+        return m_fn;
+    }
+
+    virtual const std::string Repr();
+
+private:
+    void *m_fn;
 };
 
 #endif

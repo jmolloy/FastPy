@@ -1,20 +1,24 @@
 #ifndef PY_RUNTIME_H
 #define PY_RUNTIME_H
 
-#include <PyObject.h>
+#include <Object.h>
 
-struct FPyDict;
+class Dict;
+
+#define TRACE_C_CALLS 1
 
 extern "C" {
 
-    void *FPyRuntime_CheckCall(FPyObject *obj);
+    void *FPyRuntime_CheckCall(Object *obj);
 
-    FPyObject *FPyRuntime_Print(FPyObject *obj);
-    FPyObject *FPyRuntime_PrintItem(FPyObject *obj);
-    FPyObject *FPyRuntime_PrintNewline();
+    Object *FPyRuntime_Print(Object *obj);
+    Object *FPyRuntime_PrintItem(Object *obj);
+    Object *FPyRuntime_PrintNewline();
 
+
+    Object *FPyRuntime_CallC_LJ(void *fn, Object *self, Object *p1, Object *p2, Object *p3, Object *p4, Object *p5);
 }
 
-void PopulateDictWithBuiltins(FPyDict *dict);
+void PopulateDictWithBuiltins(Dict *dict);
 
 #endif

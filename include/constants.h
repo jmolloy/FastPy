@@ -11,12 +11,12 @@ class Function;
 
 class ConstantInt : public Constant {
 public:
-    ConstantInt(int n) : m_n(n) {
+    ConstantInt(long n) : m_n(n) {
         SetType(Type::GetIntTy());
     }
     virtual const std::string Repr();
 private:
-    int m_n;
+    long m_n;
 };
 class ConstantInt64 : public Constant {
 public:
@@ -121,6 +121,8 @@ public:
     unsigned char NextOp(long &i, long &arg);
 
     void Walk(Function *f);
+
+    int GetLineNo(int offs);
 
     long m_argcount;
     long m_kwonlyargcount;

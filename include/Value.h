@@ -12,7 +12,7 @@ class Function;
 class Value : public Object {
 public:
     Value() :
-        m_ty(0), m_jit_value(0) {
+        m_ty(0), m_jit_value(0), m_bytecode_offset(0) {
     }
 
     void SetType(Type *ty) {
@@ -35,6 +35,10 @@ public:
         return m_jit_value;
     }
 
+    void SetBytecodeOffset(int bo) {
+        m_bytecode_offset = bo;
+    }
+
 private:
     Type *m_ty;
 
@@ -43,6 +47,9 @@ private:
         return NULL;
     }
     jit_value_t m_jit_value;
+
+protected:
+    int m_bytecode_offset;
 };
 
 #endif

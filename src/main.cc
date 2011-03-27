@@ -6,10 +6,13 @@
 
 #include <Function.h>
 #include <Module.h>
+#include <Exception.h>
 
 #include <jit/jit.h>
 
 #include <stdio.h>
+
+jit_context_t g_lj_ctx;
 
 int main(int argc, char **argv) {
     
@@ -46,17 +49,18 @@ int main(int argc, char **argv) {
 //    code->Disassemble(std::cout);
     __main__->Dump();
 
-    jit_context_t ctx;
-    ctx = jit_context_create();
-    jit_context_build_start(ctx);
-    __main__->LJ_Codegen(ctx);
-    jit_context_build_end(ctx);
+    g_lj_ctx = jit_context_create();
+    __main__->LJ_Codegen(g_lj_ctx);
+
 //    exit(0);
     unsigned long result;
-    jit_function_apply(__main__->GetMainFunction()->LJ_Codegen(ctx),
+    jit_function_apply(__main__->GetMainFunction()->LJ_Codegen(g_lj_ctx),
                        0,
                        &result);
-    
+    if(jit_exception_get_last() != 0) {
+        Exception *e = reinterpret_cast<Exception*>(jit_exception_get_last_and_clear());
+        std::cerr << e->Repr() << std::endl;
+    } 
 
 #if 0
     Constant::GetBool(true)->Dump();

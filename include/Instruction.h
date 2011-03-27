@@ -22,7 +22,6 @@ protected:
 
     const char *m_mnemonic;
     std::vector<Value*> m_args;
-
 };
 
 #endif
