@@ -1,6 +1,7 @@
 #include <Object.h>
 #include <Type.h>
 #include <Constant.h>
+#include <constants.h>
 #include <sstream>
 #include <typeinfo>
 
@@ -55,4 +56,57 @@ Object *Object::__Subscr__(Object *attr) {
 
 Object *Object::__DelSubscr__(Object *attr) {
     throw new NotImplementedError("Not implemented for this datatype");
+}
+
+Object *Object::__Lt__(Object *idx) {
+    ConstantInt *i = dynamic_cast<ConstantInt*>(__Cmp__(idx));
+    if(!i) {
+        throw new TypeError("comparison did not return an int");
+    }
+    int n = i->Get();   
+    return (Object*) ((n < 0) ? Constant::GetBool(true) : Constant::GetBool(false));
+}
+Object *Object::__Le__(Object *idx) {
+    ConstantInt *i = dynamic_cast<ConstantInt*>(__Cmp__(idx));
+    if(!i) {
+        throw new TypeError("comparison did not return an int");
+    }
+    int n = i->Get();   
+    return (Object*) ((n <= 0) ? Constant::GetBool(true) : Constant::GetBool(false));
+}
+Object *Object::__Eq__(Object *idx) {
+    ConstantInt *i = dynamic_cast<ConstantInt*>(__Cmp__(idx));
+    if(!i) {
+        throw new TypeError("comparison did not return an int");
+    }
+    int n = i->Get();
+
+    return (Object*) ((n == 0) ? Constant::GetBool(true) : Constant::GetBool(false));
+}
+Object *Object::__Ne__(Object *idx) {
+    ConstantInt *i = dynamic_cast<ConstantInt*>(__Cmp__(idx));
+    if(!i) {
+        throw new TypeError("comparison did not return an int");
+    }
+    int n = i->Get();   
+
+    return (Object*) ((n != 0) ? Constant::GetBool(true) : Constant::GetBool(false));
+}
+Object *Object::__Gt__(Object *idx) {
+    ConstantInt *i = dynamic_cast<ConstantInt*>(__Cmp__(idx));
+    if(!i) {
+        throw new TypeError("comparison did not return an int");
+    }
+    int n = i->Get();   
+
+    return (Object*) ((n > 0) ? Constant::GetBool(true) : Constant::GetBool(false));
+}
+Object *Object::__Ge__(Object *idx) {
+    ConstantInt *i = dynamic_cast<ConstantInt*>(__Cmp__(idx));
+    if(!i) {
+        throw new TypeError("comparison did not return an int");
+    }
+    int n = i->Get();   
+
+    return (Object*) ((n >= 0) ? Constant::GetBool(true) : Constant::GetBool(false));
 }

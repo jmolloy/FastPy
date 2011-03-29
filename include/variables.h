@@ -8,6 +8,7 @@
 #include <vector>
 #include <cassert>
 #include <iostream>
+#include <Constant.h>
 
 class Set : public Variable {
 public:
@@ -67,11 +68,21 @@ public:
     }
     virtual const std::string Repr();
 
-    void Set(std::string k, Value *v) {
+    void Set(Object *k, Object *v) {
         m_m[k] = v;
     }
+
+    virtual Object *__Subscr__(Object *idx);
+    virtual Object *__StoreSubscr__(Object *idx, Object *value);
+    virtual Object *__DelSubscr__(Object *idx);
+        
 private:
-    std::map<std::string,Value*> m_m;
+    struct DictCmp {
+        bool operator () (Object *a, Object *b) const {
+            return a->__Eq__(b) == (Object*)Constant::GetBool(false);
+        }
+    };
+    std::map<Object*,Object*,DictCmp> m_m;
 };
 
 /** Used for global and local variables - points to a value. */
@@ -81,7 +92,7 @@ public:
         m_name(name) {
         SetType(Type::GetCellTy());
     }
-    virtual const std::string Repr();  
+    virtual const std::string Repr();
     virtual std::string RefRepr();
 
     static Cell *GetGlobal(std::string name);

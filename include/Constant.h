@@ -29,7 +29,7 @@ public:
         return s;
     }
 
-
+    virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
 
 protected:
     virtual char GetWart() {

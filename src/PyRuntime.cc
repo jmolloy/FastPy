@@ -37,13 +37,7 @@ Object *FPyRuntime_Print(Object *obj) {
     return (Object*)Constant::GetNone();
 }
 Object *FPyRuntime_PrintItem(Object *obj) {
-    if(dynamic_cast<ConstantString*>(obj) != 0) {
-        printf("%s", (dynamic_cast<ConstantString*>(obj))->str().c_str() );
-    } else {
-        /** @todo Throw exception */
-        abort();
-    }
-
+    printf("%s", obj->Repr().c_str() );
     return (Object*)Constant::GetNone();
 }
 Object *FPyRuntime_PrintNewline() {
@@ -61,12 +55,16 @@ Object *FPyRuntime_CallC_LJ(void *fn, Object *self, Object *p1, Object *p2, Obje
         typedef Object *(*FnTy)(Object*,Object*,Object*,Object*,Object*,Object*);
         FnTy _fn = (FnTy)fn;
 
-        _fn(self, p1, p2, p3, p4, p5);
+        Object *r = _fn(self, p1, p2, p3, p4, p5);
+#if defined(TRACE_C_CALLS)
+//        fprintf(stderr, "  -> %ld\n", (long)r);
+#endif
+        return r;
     } catch(Exception *e) {
         jit_exception_throw(e);
     }
 }
 
 void PopulateDictWithBuiltins(Dict *dict) {
-    dict->Set(std::string("print"), new BuiltinFunction((void*)&FPyRuntime_Print));
+    dict->Set(Constant::GetString("print"), new BuiltinFunction((void*)&FPyRuntime_Print));
 }

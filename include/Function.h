@@ -44,6 +44,10 @@ public:
 
     jit_function_t LJ_Codegen(jit_context_t ctx=0);
 
+    BasicBlock *LJ_GetCurrentBlock() {
+        return m_current_block;
+    }
+
     virtual void *GetFnPtr();
 
 private:
@@ -65,6 +69,8 @@ private:
     std::vector<std::string> m_arguments;
 
     jit_function_t m_jit_function;
+
+    BasicBlock *m_current_block;
 };
 
 class BuiltinFunction : public Function {

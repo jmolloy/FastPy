@@ -51,7 +51,7 @@ const std::string Compare::Repr() {
         case PyCmp_NOT_IN: opname="not in"; break;
         case PyCmp_IS: opname="is"; break;
         case PyCmp_IS_NOT: opname="is not"; break;
-        case PyCmp_EXC_MATCH: opname="exactly"; break;
+        case PyCmp_EXC_MATCH: opname="exception match"; break;
     }
 
     std::stringstream ss;

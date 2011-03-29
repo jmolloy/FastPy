@@ -72,6 +72,8 @@ public:
         Instruction("false?", id) {
         m_args.push_back(val);
     }
+    
+    virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
 };
 class TestIfTrue : public Instruction {
 public:
@@ -135,6 +137,8 @@ public:
     }
 
     virtual const std::string Repr();
+
+    virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
 
     enum cmp_op {PyCmp_LT, PyCmp_LE, PyCmp_EQ, PyCmp_NE, PyCmp_GT, PyCmp_GE,
                  PyCmp_IN, PyCmp_NOT_IN, PyCmp_IS, PyCmp_IS_NOT, PyCmp_EXC_MATCH,

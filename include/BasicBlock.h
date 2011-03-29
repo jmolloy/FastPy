@@ -93,6 +93,10 @@ public:
         return m_unwind_block;
     }
 
+    BasicBlock *GetSuccessor(int n) {
+        return m_successors[n];
+    }
+
     void LJ_Codegen();
     jit_label_t *LJ_GetLabel();
     jit_label_t *LJ_GetEndLabel();

@@ -15,6 +15,10 @@ public:
         SetType(Type::GetIntTy());
     }
     virtual const std::string Repr();
+    long Get() {
+        return m_n;
+    }
+//    virtual Object *__Compare__(Object *other);
 private:
     long m_n;
 };
@@ -53,7 +57,6 @@ public:
         return m_str;
     }
 
-    virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
 private:
     const std::string m_str;
 };
@@ -91,7 +94,6 @@ public:
         SetType(Type::GetNoneTy());
     }
     virtual const std::string Repr();
-    virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
 };
 class FrozenSet : public Constant {
 public:

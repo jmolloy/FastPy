@@ -6,6 +6,10 @@ const std::string ConstantInt::Repr() {
     ss << m_n;
     return ss.str();
 }
+// virtual Object *ConstantInt::__Compare__(Object *other) {
+//     if(dynamic_cast<ConstantInt*>(other
+// }
+
 const std::string ConstantInt64::Repr() {
     std::stringstream ss;
     ss << m_n;

@@ -352,6 +352,9 @@ void BasicBlock::LJ_Codegen() {
         ++it) {
         (*it)->LJ_Codegen(func, m_fn);
     }
+    if(m_num_successors && GetSuccessor(m_num_successors-1)->GetId() != GetId()+1) {
+        jit_insn_branch(func, GetSuccessor(m_num_successors-1)->LJ_GetLabel());
+    }
 
     jit_insn_label(func, &m_jit_end_label);
 }

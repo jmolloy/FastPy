@@ -61,7 +61,7 @@ const std::string Dict::Repr() {
     std::stringstream ss;
     bool first = true;
     ss << "{";
-    for(std::map<std::string,Value*>::iterator it = m_m.begin();
+    for(std::map<Object*,Object*>::iterator it = m_m.begin();
         it != m_m.end();
         it++) {
         if(first) {
@@ -69,11 +69,26 @@ const std::string Dict::Repr() {
         } else {
             ss << ", ";
         }
-        ss << (*it).first << ": ";
+        ss << (*it).first->Repr() << ": ";
         ss << (*it).second->RefRepr();
     }
     ss << "}";
     return ss.str();
+}
+Object *Dict::__Subscr__(Object *idx) {
+    Object *v =  m_m[idx];
+    if(!v) {
+        return (Object*)Constant::GetNone();
+    }
+    return v;
+}
+Object *Dict::__StoreSubscr__(Object *idx, Object *value) {
+    m_m[idx] = value;
+    return 0;
+}
+Object *Dict::__DelSubscr__(Object *idx) {
+    m_m.erase(m_m.find(idx));
+    return 0;
 }
 
 const std::string Cell::Repr() {

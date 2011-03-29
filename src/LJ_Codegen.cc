@@ -1,10 +1,8 @@
 #include <instructions.h>
 #include <constants.h>
+#include <BasicBlock.h>
 #include <jit/jit.h>
 
-#include <PyDict.h>
-#include <PyString.h>
-#include <PyNone.h>
 #include <PyRuntime.h>
 #include <Module.h>
 
@@ -68,6 +66,21 @@ static jit_value_t _LJ_CallVtable(jit_function_t func, int idx, jit_value_t obj)
     return jit_insn_call_native(func, "FPyRuntime_CallC_LJ", (void*)&FPyRuntime_CallC_LJ, _LJ_fn_signature(1), args, 2, 0);
 }
 
+static jit_value_t _LJ_CallVtable(jit_function_t func, int idx, jit_value_t obj, jit_value_t p1) {
+    jit_value_t vtable_ptr = jit_insn_load_relative(func, obj, 0, jit_type_create_pointer(jit_type_nuint, 1));
+    jit_value_t fnp = jit_insn_load_elem(func,
+                                         vtable_ptr,
+                                         jit_value_create_nint_constant(func, jit_type_nuint, idx),
+                                         jit_type_nuint);
+    
+    jit_value_t args[4];
+    args[0] = fnp;
+    args[1] = obj;
+    args[2] = p1;
+    return jit_insn_call_native(func, "FPyRuntime_CallC_LJ", (void*)&FPyRuntime_CallC_LJ, _LJ_fn_signature(2), args, 3, 0);
+}
+
+
 static jit_value_t _LJ_CallVtable(jit_function_t func, int idx, jit_value_t obj, jit_value_t p1, jit_value_t p2) {
     jit_value_t vtable_ptr = jit_insn_load_relative(func, obj, 0, jit_type_create_pointer(jit_type_nuint, 1));
     jit_value_t fnp = jit_insn_load_elem(func,
@@ -87,18 +100,11 @@ static jit_value_t _LJ_CallVtable(jit_function_t func, int idx, jit_value_t obj,
 jit_value_t LoadGlobal::_LJ_Codegen(jit_function_t func, Function *f) {
     jit_value_t g = jit_value_create_nint_constant(func, jit_type_nuint, (jit_nint)f->GetModule()->GetGlobals());
     
-    jit_value_t hash_value;
-    if(dynamic_cast<Constant*>(m_args[0]) != NULL) {
-        hash_value = jit_value_create_nint_constant(func, jit_type_nuint, 1);
-    } else {
-        hash_value = jit_value_create_nint_constant(func, jit_type_nuint, 2);
-    }
-
     jit_insn_mark_offset(func, m_bytecode_offset);
 
     return _LJ_CallVtable(func,
                           Object::idx__Subscr__,
-                          g, hash_value, m_args[0]->LJ_Codegen(func, f));
+                          g, m_args[0]->LJ_Codegen(func, f));
 }
 
 jit_value_t Return::_LJ_Codegen(jit_function_t func, Function *f) {
@@ -140,6 +146,54 @@ jit_value_t Call::_LJ_Codegen(jit_function_t func, Function *f) {
     return jit_insn_call_indirect(func, callee, sig_call, args, nargs, 0);
 }
 
+jit_value_t Compare::_LJ_Codegen(jit_function_t func, Function *f) {
+    int vtable_idx = -1;
+    switch(m_op) {
+        case PyCmp_LT:
+            vtable_idx = Object::idx__Lt__;
+            break;
+        case PyCmp_LE:
+            vtable_idx = Object::idx__Le__;
+            break;
+        case PyCmp_EQ:
+            vtable_idx = Object::idx__Eq__;
+            break;
+        case PyCmp_NE:
+            vtable_idx = Object::idx__Ne__;
+            break;
+        case PyCmp_GT:
+            vtable_idx = Object::idx__Gt__;
+            break;
+        case PyCmp_GE:
+            vtable_idx = Object::idx__Ge__;
+            break;
+        case PyCmp_IS:
+        case PyCmp_IS_NOT:
+        case PyCmp_EXC_MATCH:
+        case PyCmp_IN:
+        case PyCmp_NOT_IN:
+        default:
+            std::cerr << "Unimplemented compare operation\n";
+    }
+
+    jit_insn_mark_offset(func, m_bytecode_offset);
+
+    return _LJ_CallVtable(func,
+                          vtable_idx,
+                          m_args[0]->LJ_Codegen(func, f), m_args[1]->LJ_Codegen(func, f));
+}
+
+jit_value_t TestIfFalse::_LJ_Codegen(jit_function_t func, Function *f) {
+    jit_insn_mark_offset(func, m_bytecode_offset);
+
+    BasicBlock *b = f->LJ_GetCurrentBlock();
+
+    jit_value_t eq_test = jit_insn_eq(func,
+                                      m_args[0]->LJ_Codegen(func, f),
+                                      Constant::GetBool(false)->LJ_Codegen(func, f));
+    jit_insn_branch_if(func, eq_test, b->GetSuccessor(0)->LJ_GetLabel());
+}
+
 jit_value_t PrintItem::_LJ_Codegen(jit_function_t func, Function *f) {
     jit_insn_mark_offset(func, m_bytecode_offset);
     return _LJ_Call(func, "FPyRuntime_PrintItem", (void*)&FPyRuntime_PrintItem, m_args[0]->LJ_Codegen(func, f));
@@ -149,9 +203,7 @@ jit_value_t PrintNewline::_LJ_Codegen(jit_function_t func, Function *f) {
     return _LJ_Call(func, "FPyRuntime_PrintNewline", (void*)&FPyRuntime_PrintNewline);
 }
 
-jit_value_t ConstantNone::_LJ_Codegen(jit_function_t func, Function *f) {
-    return jit_value_create_nint_constant(func, jit_type_nuint, (jit_nuint)this);
-}
-jit_value_t ConstantString::_LJ_Codegen(jit_function_t func, Function *f) {
+jit_value_t Constant::_LJ_Codegen(jit_function_t func, Function *f) {
+    /**@bug Should these be cached? they're made on a per-function basis... :/ */
     return jit_value_create_nint_constant(func, jit_type_nuint, (jit_nuint)this);
 }

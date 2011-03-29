@@ -14,7 +14,8 @@ extern jit_context_t g_lj_ctx;
 std::map<std::string, Function*> g_functions;
 
 Function::Function(std::string name, Code *code, Module *module) :
-    m_name(name), m_code(code), m_module(module), m_jit_function(0) {
+    m_name(name), m_code(code), m_module(module), m_jit_function(0),
+    m_current_block(0) {
     m_entry_block = new BasicBlock(this);
 
 #if 0
@@ -88,10 +89,12 @@ jit_function_t Function::LJ_Codegen(jit_context_t ctx) {
         }
     }
 
+    m_current_block = GetEntryBlock();
     GetEntryBlock()->LJ_Codegen();
     for(std::vector<BasicBlock*>::iterator it = m_blocks.begin();
         it != m_blocks.end();
         ++it) {
+        m_current_block = *it;
         (*it)->LJ_Codegen();
     }
 

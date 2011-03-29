@@ -201,7 +201,7 @@ Object *Marshal::ReadObject(std::istream &is, Errors &e) {
                 }
                 Object *val = ReadObject(is, e);
                 if(val) {
-                    d->Set(ConstantString::From(key)->str(), val->AsValue());
+                    d->Set(ConstantString::From(key), val->AsValue());
                 }
                 delete key;
             }

@@ -36,4 +36,14 @@ public:
 
 };
 
+class TypeError : public RuntimeError {
+public:
+    TypeError(const std::string &desc) :
+        RuntimeError("NotImplementedError", desc) {
+        m_traceback->AddTraceFromHere();
+    }
+
+};
+
+
 #endif

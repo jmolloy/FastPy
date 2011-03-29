@@ -37,7 +37,13 @@ public:
         idx__Hasattr__ = 6,
         idx__StoreSubscr__ = 7,
         idx__Subscr__ = 8,
-        idx__DelSubscr__ = 9
+        idx__DelSubscr__ = 9,
+        idx__Lt__ = 10,
+        idx__Le__ = 11,
+        idx__Eq__ = 12,
+        idx__Ne__ = 13,
+        idx__Gt__ = 14,
+        idx__Ge__ = 15
     };  
 
     /*
@@ -53,7 +59,12 @@ public:
     virtual Object *__StoreSubscr__(Object *idx, Object *value);
     virtual Object *__Subscr__(Object *idx);
     virtual Object *__DelSubscr__(Object *idx);
-
+    virtual Object *__Lt__(Object *idx);
+    virtual Object *__Le__(Object *idx);
+    virtual Object *__Eq__(Object *idx);
+    virtual Object *__Ne__(Object *idx);
+    virtual Object *__Gt__(Object *idx);
+    virtual Object *__Ge__(Object *idx);
 
     /** Provide a string representation of the object. */
     virtual const std::string Repr() = 0;
