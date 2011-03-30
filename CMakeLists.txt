@@ -31,5 +31,6 @@ find_path(LIBJIT_INC jit/jit.h)
 
 include_directories(${LIBJIT_INC} ) #${PYTHON_INC})
 include_directories(include)
+add_definitions(-Wno-invalid-offsetof)
 add_executable(fastpy ${SRCS})
 target_link_libraries(fastpy ${LIBJIT})

@@ -15,7 +15,7 @@ Object *Object::__Hash__() {
 Object *Object::__Repr__() {
     std::stringstream ss;
     ss << "<";
-    ss << typeid(this).name() << "instance @ ";
+    ss << typeid(*this).name() << " instance @ ";
     ss << std::hex << this << std::dec << ">";
 
     return (Object*)Constant::GetString(ss.str());

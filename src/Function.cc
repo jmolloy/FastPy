@@ -15,7 +15,7 @@ extern jit_context_t g_lj_ctx;
 
 Function::Function(std::string name, Code *code, Module *module) :
     m_name(name), m_code(code), m_module(module), m_jit_function(0),
-    m_current_block(0) {
+    m_current_block(0), m_lj_exception_object(NULL) {
     m_entry_block = new BasicBlock(this);
 
 #if 0

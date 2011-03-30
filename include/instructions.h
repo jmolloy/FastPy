@@ -115,6 +115,7 @@ public:
         Instruction("begin-catch-get-type", id) {
     }
 
+    virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
 };
 class BeginCatch_GetValue : public Instruction {
 public:
@@ -122,6 +123,7 @@ public:
         Instruction("begin-catch-get-value", id) {
     }
 
+    virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
 };
 class BeginCatch_GetTraceback : public Instruction {
 public:
@@ -129,6 +131,7 @@ public:
         Instruction("begin-catch-get-traceback", id) {
     }
 
+    virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
 };
 class Compare : public Instruction {
 public:
@@ -169,6 +172,7 @@ public:
         Instruction("reraise", id) {
     }
 
+    virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
 };
 class Phi : public Instruction {
 public:

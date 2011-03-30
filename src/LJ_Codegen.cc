@@ -5,6 +5,7 @@
 
 #include <PyRuntime.h>
 #include <Module.h>
+#include <Exception.h>
 
 #include <stdio.h>
 
@@ -212,6 +213,55 @@ jit_value_t PrintNewline::_LJ_Codegen(jit_function_t func, Function *f) {
     jit_insn_mark_offset(func, m_bytecode_offset);
     return _LJ_Call(func, "FPyRuntime_PrintNewline", (void*)&FPyRuntime_PrintNewline);
 }
+
+jit_value_t BeginCatch_GetType::_LJ_Codegen(jit_function_t func, Function *f) {
+    jit_value_t exc = f->LJ_GetExceptionObject();
+    if(exc == 0) {
+        exc = jit_insn_thrown_exception(func);
+        f->LJ_SetExceptionObject(exc);
+        _LJ_Call(func, "jit_exception_clear_last", (void*)&jit_exception_clear_last);
+    }
+
+    /**@todo Type objects */
+
+    return exc;
+}
+
+jit_value_t BeginCatch_GetValue::_LJ_Codegen(jit_function_t func, Function *f) {
+    jit_value_t exc = f->LJ_GetExceptionObject();
+    if(exc == 0) {
+        exc = jit_insn_thrown_exception(func);
+        f->LJ_SetExceptionObject(exc);
+        _LJ_Call(func, "jit_exception_clear_last", (void*)&jit_exception_clear_last);
+    }
+
+    return exc;
+}
+
+jit_value_t BeginCatch_GetTraceback::_LJ_Codegen(jit_function_t func, Function *f) {
+    jit_value_t exc = f->LJ_GetExceptionObject();
+    if(exc == 0) {
+        exc = jit_insn_thrown_exception(func);
+        f->LJ_SetExceptionObject(exc);
+        _LJ_Call(func, "jit_exception_clear_last", (void*)&jit_exception_clear_last);
+    }
+
+    int off = offsetof(Exception, m_traceback);
+    return jit_insn_load_relative(func, exc, off, jit_type_nuint);
+}
+
+jit_value_t ReRaise::_LJ_Codegen(jit_function_t func, Function *f) {
+    jit_value_t exc = f->LJ_GetExceptionObject();
+    if(exc == 0) {
+        exc = jit_insn_thrown_exception(func);
+        f->LJ_SetExceptionObject(exc);
+        _LJ_Call(func, "jit_exception_clear_last", (void*)&jit_exception_clear_last);
+    }
+
+    jit_insn_throw(func, exc);
+    return 0;
+}
+
 
 jit_value_t Constant::_LJ_Codegen(jit_function_t func, Function *f) {
     /**@bug Should these be cached? they're made on a per-function basis... :/ */

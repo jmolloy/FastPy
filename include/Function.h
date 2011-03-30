@@ -50,6 +50,13 @@ public:
 
     virtual void *GetFnPtr();
 
+    jit_value_t LJ_GetExceptionObject() {
+        return m_lj_exception_object;
+    }
+    void LJ_SetExceptionObject(jit_value_t exc) {
+        m_lj_exception_object = exc;
+    }
+
 private:
     /** Entry block */
     BasicBlock *m_entry_block;
@@ -71,6 +78,8 @@ private:
     jit_function_t m_jit_function;
 
     BasicBlock *m_current_block;
+
+    jit_value_t m_lj_exception_object;
 };
 
 class BuiltinFunction : public Function {

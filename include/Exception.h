@@ -6,6 +6,10 @@
 
 class Exception : public Constant {
 public:
+
+    /** Let the traceback function access the traceback. */
+    friend class BeginCatch_GetTraceback;
+
     Exception(const std::string &name, const std::string &desc) :
         m_name(name), m_desc(desc), m_traceback(new Traceback()) {
     }

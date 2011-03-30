@@ -43,7 +43,11 @@ Object *FPyRuntime_Print(Object *obj) {
     return (Object*)Constant::GetNone();
 }
 Object *FPyRuntime_PrintItem(Object *obj) {
-    printf("%s", obj->Repr().c_str() );
+    if(dynamic_cast<ConstantString*>(obj) != 0) {
+        printf("%s", dynamic_cast<ConstantString*>(obj)->str().c_str());
+    } else {
+        printf("%s", obj->Repr().c_str() );
+    }
     return (Object*)Constant::GetNone();
 }
 Object *FPyRuntime_PrintNewline() {
@@ -53,9 +57,10 @@ Object *FPyRuntime_PrintNewline() {
 
 Object *FPyRuntime_CallC_LJ(void *fn, Object *self, Object *p1, Object *p2, Object *p3, Object *p4, Object *p5) {
 #if defined(TRACE_C_CALLS)
+    int num_args;
     if(db_print(0, DB_PRINT_C_CALLS)) {
         printf("*** ");
-        int num_args = print_function_name(fn);
+        num_args = print_function_name(fn);
         printf("(");
         if(num_args > 0) printf("%.20s, ", self->Repr().c_str());
         if(num_args > 1) printf("%.20s, ", p1->Repr().c_str());
@@ -75,7 +80,11 @@ Object *FPyRuntime_CallC_LJ(void *fn, Object *self, Object *p1, Object *p2, Obje
         Object *r = _fn(self, p1, p2, p3, p4, p5);
 #if defined(TRACE_C_CALLS)
     if(db_print(0, DB_PRINT_C_CALLS)) {
-        fprintf(stdout, "***  -> %.20s\n", r->Repr().c_str());
+        if(num_args == -1) {
+            fprintf(stdout, "***  -> %p\n", r);
+        } else {
+            fprintf(stdout, "***  -> %.20s\n", r->Repr().c_str());
+        }
     }
 #endif
         return r;
