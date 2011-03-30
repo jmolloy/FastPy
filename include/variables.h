@@ -77,12 +77,7 @@ public:
     virtual Object *__DelSubscr__(Object *idx);
         
 private:
-    struct DictCmp {
-        bool operator () (Object *a, Object *b) const {
-            return a->__Eq__(b) == (Object*)Constant::GetBool(false);
-        }
-    };
-    std::map<Object*,Object*,DictCmp> m_m;
+    std::map<Object*,Object*> m_m;
 };
 
 /** Used for global and local variables - points to a value. */

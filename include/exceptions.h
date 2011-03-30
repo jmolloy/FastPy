@@ -39,7 +39,16 @@ public:
 class TypeError : public RuntimeError {
 public:
     TypeError(const std::string &desc) :
-        RuntimeError("NotImplementedError", desc) {
+        RuntimeError("TypeError", desc) {
+        m_traceback->AddTraceFromHere();
+    }
+
+};
+
+class KeyError : public RuntimeError {
+public:
+    KeyError(const std::string &desc) :
+        RuntimeError("KeyError", desc) {
         m_traceback->AddTraceFromHere();
     }
 

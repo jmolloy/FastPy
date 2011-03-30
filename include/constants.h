@@ -57,6 +57,8 @@ public:
         return m_str;
     }
 
+    virtual Object *__Cmp__(Object *idx);
+
 private:
     const std::string m_str;
 };

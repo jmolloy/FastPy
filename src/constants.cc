@@ -1,5 +1,6 @@
 #include <constants.h>
 #include <sstream>
+#include <string.h>
 
 const std::string ConstantInt::Repr() {
     std::stringstream ss;
@@ -25,6 +26,19 @@ const std::string ConstantString::Repr() {
     ss << "\"" << m_str << "\"";
     return ss.str();
 }
+Object *ConstantString::__Cmp__(Object *other) {
+    if(other == this) {
+        return (Object*)Constant::GetInt(0);
+    }
+
+    ConstantString *s = dynamic_cast<ConstantString*>(other);
+    if(!s) {
+        return (Object*)Constant::GetInt(1);
+    }
+
+    return (Object*)Constant::GetInt( strcmp(m_str.c_str(), s->m_str.c_str()) );
+}
+
 const std::string ConstantByteString::Repr() {
     std::stringstream ss;
     ss << "b\"";

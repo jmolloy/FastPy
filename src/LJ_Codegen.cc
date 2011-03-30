@@ -107,6 +107,16 @@ jit_value_t LoadGlobal::_LJ_Codegen(jit_function_t func, Function *f) {
                           g, m_args[0]->LJ_Codegen(func, f));
 }
 
+jit_value_t StoreGlobal::_LJ_Codegen(jit_function_t func, Function *f) {
+    jit_value_t g = jit_value_create_nint_constant(func, jit_type_nuint, (jit_nint)f->GetModule()->GetGlobals());
+    
+    jit_insn_mark_offset(func, m_bytecode_offset);
+
+    return _LJ_CallVtable(func,
+                          Object::idx__StoreSubscr__,
+                          g, m_args[0]->LJ_Codegen(func, f), m_args[1]->LJ_Codegen(func, f));
+}
+
 jit_value_t Return::_LJ_Codegen(jit_function_t func, Function *f) {
     jit_insn_mark_offset(func, m_bytecode_offset);
     jit_insn_return(func, m_args[0]->LJ_Codegen(func, f));

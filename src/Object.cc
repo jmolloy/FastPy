@@ -5,6 +5,7 @@
 #include <sstream>
 #include <typeinfo>
 
+#include <stdio.h>
 #include <exceptions.h>
 
 Object *Object::__Hash__() {
@@ -63,7 +64,10 @@ Object *Object::__Lt__(Object *idx) {
     if(!i) {
         throw new TypeError("comparison did not return an int");
     }
-    int n = i->Get();   
+    int n = i->Get();
+
+    fprintf(stderr, "Lt: %p, %p, %d (%s, %s)\n", this, idx, n, Repr().c_str(), idx->Repr().c_str());
+
     return (Object*) ((n < 0) ? Constant::GetBool(true) : Constant::GetBool(false));
 }
 Object *Object::__Le__(Object *idx) {

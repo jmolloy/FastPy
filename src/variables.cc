@@ -1,7 +1,9 @@
 #include <variables.h>
 #include <sstream>
+#include <Constant.h>
+#include <exceptions.h>
 
-std::map<std::string, Cell*> g_globals;
+//std::map<std::string, Cell*> g_globals;
 
 const std::string Set::Repr() {
     std::stringstream ss;
@@ -76,19 +78,36 @@ const std::string Dict::Repr() {
     return ss.str();
 }
 Object *Dict::__Subscr__(Object *idx) {
-    Object *v =  m_m[idx];
-    if(!v) {
-        return (Object*)Constant::GetNone();
+    /* Oh my gosh, this is just utterly horrendous.
+
+       Like, actually, O(n) horrendous. */
+    for(std::map<Object*,Object*>::iterator it = m_m.begin();
+        it != m_m.end();
+        ++it) {
+        Object *k = it->first;
+        if(k->__Eq__(idx) == (Object*)Constant::GetBool(true)) {
+            return it->second;
+        }
     }
-    return v;
+    throw new RuntimeError("Key does not exist");
 }
 Object *Dict::__StoreSubscr__(Object *idx, Object *value) {
     m_m[idx] = value;
-    return 0;
+    return value;
 }
 Object *Dict::__DelSubscr__(Object *idx) {
-    m_m.erase(m_m.find(idx));
-    return 0;
+    /* Oh my gosh, this is just utterly horrendous.
+
+       Like, actually, O(n) horrendous. */
+    for(std::map<Object*,Object*>::iterator it = m_m.begin();
+        it != m_m.end();
+        ++it) {
+        Object *k = it->first;
+        if(k->__Eq__(idx) == (Object*)Constant::GetBool(true)) {
+            m_m.erase(it);
+            return (Object*)Constant::GetNone();
+        }
+    }
 }
 
 const std::string Cell::Repr() {
@@ -99,13 +118,13 @@ std::string Cell::RefRepr() {
     ss << "$" << m_name;
     return ss.str();
 }
-Cell *Cell::GetGlobal(std::string name) {
-    Cell *g = g_globals[name];
-    if(g) {
-        return g;
-    } else {
-        g = new Cell(name);
-        g_globals[name] = g;
-        return g;
-    }
-}
+// Cell *Cell::GetGlobal(std::string name) {
+//     Cell *g = g_globals[name];
+//     if(g) {
+//         return g;
+//     } else {
+//         g = new Cell(name);
+//         g_globals[name] = g;
+//         return g;
+//     }
+// }

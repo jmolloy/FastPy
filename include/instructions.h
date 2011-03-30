@@ -16,6 +16,8 @@ public:
         m_args.push_back(global);
         m_args.push_back(val);
     }
+
+    virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
 };
 class StoreLocal : public Instruction {
 public:
