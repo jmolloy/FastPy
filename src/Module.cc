@@ -7,6 +7,7 @@
 #include <jit/jit-dump.h>
 
 #include <PyRuntime.h>
+#include <db.h>
 
 Module::Module(const std::string &name, Code *c) :
     m_name(name),
@@ -16,6 +17,17 @@ Module::Module(const std::string &name, Code *c) :
 
     m_main = new Function(ss.str(), c, this);
     c->Walk(m_main);
+
+    if(db_print(m_main, DB_PRINT_BYTECODE)) {
+        std::cout << "*** Function " << ss.str() << " - Bytecode\n";
+        c->Disassemble(std::cout);
+        std::cout << "*** End Function " << ss.str() << " - Bytecode\n";
+    }
+    if(db_print(m_main, DB_PRINT_IR)) {
+        std::cout << "*** Function " << ss.str() << " - IR\n";
+        std::cout << m_main->Repr() << "\n";
+        std::cout << "*** End Function " << ss.str() << " - IR\n";
+    }
 
     PopulateDictWithBuiltins(m_globals);
 }

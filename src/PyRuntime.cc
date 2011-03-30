@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <execinfo.h>
 
+#include <db.h>
+
 #include <jit/jit.h>
 
 void *FPyRuntime_CheckCall(Object *obj) {
@@ -47,9 +49,11 @@ Object *FPyRuntime_PrintNewline() {
 
 Object *FPyRuntime_CallC_LJ(void *fn, Object *self, Object *p1, Object *p2, Object *p3, Object *p4, Object *p5) {
 #if defined(TRACE_C_CALLS)
-    char **syms = backtrace_symbols(&fn, 1);
-    fprintf(stderr, "CallC_LJ: %s (%p, %p, %p, %p, %p, %p)\n", syms[0], self, p1, p2, p3, p4, p5);
-    free(syms);
+    if(db_print(0, DB_PRINT_C_CALLS)) {
+        char **syms = backtrace_symbols(&fn, 1);
+        fprintf(stderr, "CallC_LJ: %s (%p, %p, %p, %p, %p, %p)\n", syms[0], self, p1, p2, p3, p4, p5);
+        free(syms);
+    }
 #endif
     try {
         typedef Object *(*FnTy)(Object*,Object*,Object*,Object*,Object*,Object*);

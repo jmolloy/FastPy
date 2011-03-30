@@ -101,8 +101,6 @@ void Code::Disassemble(std::ostream &s) {
 void Code::Walk(Function *f) {
     InitOpcodeNames();
 
-    Disassemble(std::cout);
-
     int id = 1;
     BasicBlock *b = f->GetEntryBlock();
     b->SetId(++id);

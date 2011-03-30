@@ -7,11 +7,11 @@
 
 #include <stdlib.h>
 
+#include <db.h>
+
 #include <jit/jit-dump.h>
 
 extern jit_context_t g_lj_ctx;
-
-std::map<std::string, Function*> g_functions;
 
 Function::Function(std::string name, Code *code, Module *module) :
     m_name(name), m_code(code), m_module(module), m_jit_function(0),
@@ -32,8 +32,6 @@ Function::Function(std::string name, Code *code, Module *module) :
         i++;
     }
 #endif
-
-    g_functions[name] = this;
 }
 
 Function::~Function() {
@@ -114,9 +112,20 @@ jit_function_t Function::LJ_Codegen(jit_context_t ctx) {
         }
 
     }
-    jit_dump_function(stdout, m_jit_function, GetName().c_str());
+
+    if(db_print(this, DB_PRINT_LJ)) {
+        std::cout << "*** Function " << m_name << " - Libjit\n";
+        jit_dump_function(stdout, m_jit_function, GetName().c_str());
+        std::cout << "*** End Function " << m_name << "\n";
+    }
 
     jit_function_compile(m_jit_function);
+
+    if(db_print(this, DB_PRINT_ASM)) {
+        std::cout << "*** Function " << m_name << " - Asm\n";
+        jit_dump_function(stdout, m_jit_function, GetName().c_str());
+        std::cout << "*** End Function " << m_name << " - Asm\n";
+    }
 
     jit_context_build_end(ctx);
 

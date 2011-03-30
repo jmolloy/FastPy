@@ -19,11 +19,7 @@ set(SRCS
   src/instructions.cc
   src/Module.cc
   src/LJ_Codegen.cc
-  src/PyDict.cc
-  src/PyString.cc
-  src/PyNone.cc
   src/PyRuntime.cc
-  src/PyFunction.cc
   src/Object.cc
   src/Exception.cc
   src/Traceback.cc
