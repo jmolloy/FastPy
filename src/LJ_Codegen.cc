@@ -258,7 +258,8 @@ jit_value_t ReRaise::_LJ_Codegen(jit_function_t func, Function *f) {
         _LJ_Call(func, "jit_exception_clear_last", (void*)&jit_exception_clear_last);
     }
 
-    jit_insn_throw(func, exc);
+    _LJ_Call(func, "jit_exception_clear_last", (void*)&jit_exception_clear_last);
+    jit_insn_rethrow_unhandled(func);
     return 0;
 }
 

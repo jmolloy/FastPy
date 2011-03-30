@@ -99,14 +99,28 @@ jit_function_t Function::LJ_Codegen(jit_context_t ctx) {
     if(uses_catcher) {
         jit_insn_start_catcher(m_jit_function);
 
+        if(GetEntryBlock()->GetUnwindBlock()) {
+            BasicBlock *b=  GetEntryBlock();
+            jit_label_t lab = jit_label_undefined;
+            jit_insn_branch_if_pc_not_in_range(m_jit_function,
+                                               *b->LJ_GetLabel(),
+                                               *b->LJ_GetEndLabel(),
+                                               &lab);
+            jit_insn_branch(m_jit_function, b->GetUnwindBlock()->LJ_GetLabel());
+            jit_insn_label(m_jit_function, &lab);
+        }
+
         for(std::vector<BasicBlock*>::iterator it = m_blocks.begin();
             it != m_blocks.end();
             ++it) {
             if((*it)->GetUnwindBlock()) {
+                jit_label_t lab = jit_label_undefined;
                 jit_insn_branch_if_pc_not_in_range(m_jit_function,
                                                    *(*it)->LJ_GetLabel(),
                                                    *(*it)->LJ_GetEndLabel(),
-                                                   (*it)->GetUnwindBlock()->LJ_GetLabel());
+                                                   &lab);
+                jit_insn_branch(m_jit_function, (*it)->GetUnwindBlock()->LJ_GetLabel());
+                jit_insn_label(m_jit_function, &lab);
             }
             jit_insn_rethrow_unhandled(m_jit_function);
         }
