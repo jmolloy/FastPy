@@ -19,7 +19,6 @@ Code::Code(long argcount, long kwonlyargcount, long nlocals, long stacksize,
     m_names(names), m_varnames(varnames), m_freevars(freevars), m_cellvars(cellvars),
     m_filename(filename), m_name(name), m_lnotab(lnotab)
 {
-    SetType(Type::GetCodeTy());
 }
 
 const std::string Code::Repr() {

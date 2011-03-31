@@ -13,7 +13,6 @@
 class Set : public Variable {
 public:
     Set() {
-        SetType(Type::GetSetTy());
     }
     virtual const std::string Repr();
 
@@ -27,7 +26,6 @@ private:
 class List : public Variable {
 public:
     List(int n) : m_l(n) {
-        SetType(Type::GetListTy());
     }
     virtual const std::string Repr();
 
@@ -41,7 +39,6 @@ private:
 class Tuple : public Variable {
 public:
     Tuple(int n) : m_l(n) {
-        SetType(Type::GetTupleTy());
     }
     virtual const std::string Repr();
 
@@ -64,7 +61,6 @@ private:
 class Dict : public Variable {
 public:
     Dict() {
-        SetType(Type::GetDictTy());
     }
     virtual const std::string Repr();
 
@@ -85,7 +81,6 @@ class Cell : public Variable {
 public:
     Cell(std::string name) :
         m_name(name) {
-        SetType(Type::GetCellTy());
     }
     virtual const std::string Repr();
     virtual std::string RefRepr();

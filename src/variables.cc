@@ -91,7 +91,7 @@ Object *Dict::__Subscr__(Object *idx) {
     }
     std::stringstream ss;
     ss << "Key does not exist: " << idx->Repr();
-    throw new RuntimeError(ss.str());
+    throw new KeyError(ss.str());
 }
 Object *Dict::__StoreSubscr__(Object *idx, Object *value) {
     m_m[idx] = value;

@@ -1,74 +1,25 @@
 #include <Type.h>
 #include <map>
+#include <sstream>
 
-uint16_t Type::TagFor(Type *t) {
-    static std::map<Type*,uint16_t> m;
-    static int n = 0;
+std::map<std::string, Type*> g_types;
 
-    if(m[t] == 0) {
-        m[t] = n++;
+Type *Type::For(Object *obj) {
+    std::string name = typeid(*obj).name();
+    /**@todo Locking */
+    if(g_types.find(name) == g_types.end()) {
+        g_types[name] = new Type(name, obj);
     }
-    return m[t];
+    return g_types[name];
 }
 
-Type *Type::GetIntTy() {
-    static Type t;
-    return &t;
-}
-Type *Type::GetInt64Ty() {
-    static Type t;
-    return &t;
-}
-Type *Type::GetFloatTy() {
-    static Type t;
-    return &t;
-}
-Type *Type::GetStringTy() {
-    static Type t;
-    return &t;
-}
-Type *Type::GetByteStringTy() {
-    static Type t;
-    return &t;
-}
-Type *Type::GetBoolTy() {
-    static Type t;
-    return &t;
-}
-Type *Type::GetNoneTy() {
-    static Type t;
-    return &t;
-}
-Type *Type::GetFrozenSetTy() {
-    static Type t;
-    return &t;
-}
-Type *Type::GetSetTy() {
-    static Type t;
-    return &t;
-}
-Type *Type::GetListTy() {
-    static Type t;
-    return &t;
-}
-Type *Type::GetTupleTy() {
-    static Type t;
-    return &t;
-}
-Type *Type::GetDictTy() {
-    static Type t;
-    return &t;
-}
-Type *Type::GetCodeTy() {
-    static Type t;
-    return &t;
-}
-Type *Type::GetCellTy() {
-    static Type t;
-    return &t;
+Type::Type(std::string &name, Object *ex) :
+    m_name(name), m_example(ex) {
+    /**@todo ex should be deep-copied here in case the example object changes. */
 }
 
-Type *Type::GetFunctionTy() {
-    static Type t;
-    return &t;
+const std::string Type::Repr() {
+    std::stringstream ss;
+    ss << "<type '" << m_name << "'>";
+    return ss.str();
 }

@@ -12,7 +12,6 @@ class Function;
 class ConstantInt : public Constant {
 public:
     ConstantInt(long n) : m_n(n) {
-        SetType(Type::GetIntTy());
     }
     virtual const std::string Repr();
     long Get() {
@@ -25,7 +24,6 @@ private:
 class ConstantInt64 : public Constant {
 public:
     ConstantInt64(int64_t n) : m_n(n) {
-        SetType(Type::GetInt64Ty());
     }
     virtual const std::string Repr();
 private:
@@ -34,7 +32,6 @@ private:
 class ConstantFloat : public Constant {
 public:
     ConstantFloat(double n) : m_n(n) {
-        SetType(Type::GetFloatTy());
     }
     virtual const std::string Repr();
 private:
@@ -43,7 +40,6 @@ private:
 class ConstantString : public Constant {
 public:
     ConstantString(const std::string &str) : m_str(str) {
-        SetType(Type::GetStringTy());
     }
     virtual const std::string Repr();
 
@@ -68,7 +64,6 @@ private:
 class ConstantByteString : public Constant {
 public:
     ConstantByteString(int sz) : m_sz(sz) {
-        SetType(Type::GetByteStringTy());
         m_ptr = new unsigned char[sz];
     }
     ~ConstantByteString() {
@@ -87,7 +82,6 @@ public:
 class ConstantBool : public Constant {
 public:
     ConstantBool(bool b) : m_b(b) {
-        SetType(Type::GetBoolTy());
     }
     virtual const std::string Repr();
 private:
@@ -96,14 +90,12 @@ private:
 class ConstantNone : public Constant {
 public:
     ConstantNone() {
-        SetType(Type::GetNoneTy());
     }
     virtual const std::string Repr();
 };
 class FrozenSet : public Constant {
 public:
     FrozenSet() {
-        SetType(Type::GetFrozenSetTy());
     }
     virtual const std::string Repr();
 

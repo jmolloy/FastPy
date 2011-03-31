@@ -3,7 +3,6 @@
 
 #include <Value.h>
 #include <inttypes.h>
-#include <Type.h>
 #include <cassert>
 #include <sstream>
 

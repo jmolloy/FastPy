@@ -7,6 +7,7 @@
 #include <constants.h>
 
 extern jit_context_t g_lj_ctx;
+extern bool g_db_traceback_builtins;
 
 void Traceback::AddTraceFromHere() {
     m_stack_trace = jit_exception_get_stack_trace();
@@ -27,7 +28,7 @@ const std::string Traceback::Repr() {
 
             ss << "  File \"" << f->GetCode()->m_filename->str() << "\", line " << lno << ", in " << f->GetCode()->m_name->str() << "\n";
 #if defined(TRACEBACK_SHOW_BUILTINS)
-        } else {
+        } else if(g_db_traceback_builtins) {
             void *ptr = jit_stack_trace_get_pc(m_stack_trace, i);
             char **syms = backtrace_symbols(&ptr, 1);
             char *sym = syms[0];

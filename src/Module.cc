@@ -13,7 +13,7 @@ Module::Module(const std::string &name, Code *c) :
     m_name(name),
     m_globals(new Dict()) {
     std::stringstream ss;
-    ss << name << "_main";
+    ss << name << ".main";
 
     m_main = new Function(ss.str(), c, this);
     c->Walk(m_main);

@@ -33,7 +33,6 @@ public:
         RuntimeError("NotImplementedError", desc) {
         m_traceback->AddTraceFromHere();
     }
-
 };
 
 class TypeError : public RuntimeError {

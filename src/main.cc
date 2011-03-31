@@ -17,6 +17,7 @@
 jit_context_t g_lj_ctx;
 
 int g_db_print = 0;
+bool g_db_traceback_builtins = false;
 std::set<std::string> g_db_funcs;
 std::set<std::string> g_db_phases;
 
@@ -48,7 +49,12 @@ int main(int argc, char **argv) {
     options[2].flag = 0;
     options[2].val = 0;
 
-    memset(&options[3], 0, sizeof(struct option));
+    options[3].name = "db-traceback-builtins";
+    options[3].has_arg = no_argument;
+    options[3].flag = 0;
+    options[3].val = 0;
+
+    memset(&options[4], 0, sizeof(struct option));
 
     int indexptr;
     char ret;
@@ -79,6 +85,8 @@ int main(int argc, char **argv) {
             g_db_funcs.insert(std::string(optarg));
         } else if(!strcmp(options[indexptr].name, "db-phase")) {
             g_db_phases.insert(std::string(optarg));
+        } else if(!strcmp(options[indexptr].name, "db-traceback-builtins")) {
+            g_db_traceback_builtins = true;
         } else {
             abort();
         }

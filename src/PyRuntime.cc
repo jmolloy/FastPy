@@ -4,6 +4,7 @@
 #include <variables.h>
 #include <constants.h>
 #include <exceptions.h>
+#include <Type.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -95,6 +96,14 @@ Object *FPyRuntime_CallC_LJ(void *fn, Object *self, Object *p1, Object *p2, Obje
 
 void PopulateDictWithBuiltins(Dict *dict) {
     dict->Set(Constant::GetString("print"), new BuiltinFunction((void*)&FPyRuntime_Print));
+    dict->Set(Constant::GetString("int"), Type::For(Constant::GetInt(0)));
+    dict->Set(Constant::GetString("str"), Type::For(Constant::GetString("")));
+    dict->Set(Constant::GetString("Exception"), Type::For(new Exception("","")));
+    dict->Set(Constant::GetString("RuntimeError"), Type::For(new RuntimeError("")));
+    dict->Set(Constant::GetString("NotImplementedError"), Type::For(new NotImplementedError("")));
+    dict->Set(Constant::GetString("KeyError"), Type::For(new KeyError("")));
+    dict->Set(Constant::GetString("StandardError"), Type::For(new StandardError("")));
+    dict->Set(Constant::GetString("TypeError"), Type::For(new TypeError("")));
 }
 
 static int print_function_name(void *fn) {

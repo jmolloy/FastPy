@@ -13,8 +13,6 @@
 
 class Value;
 
-#define OBJECT_MAGIC 0x1BADB002
-
 /** An object is the base class of all instructions, constants and variables - everything representable in the system.
 
     Each object has a set of "properties", which can be set and queried. It also has an "ID", which can be used as a reference
@@ -27,7 +25,7 @@ public:
     /** Properties are expressed as key/value pairs of strings. */
     typedef std::map<std::string, std::string> PropertyMap;
 
-    Object() : m_id(-1), m_magic(OBJECT_MAGIC) {}
+    Object() : m_id(-1) {}
 
     enum VtableIdx {
         idx__Hash__ = 0,
@@ -143,8 +141,6 @@ public:
             return NULL;
         }
     }
-
-    int m_magic;
 
 protected:
     /** Return the 'wart' for this object type ('%', '@', '$', ':') */

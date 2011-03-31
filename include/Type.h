@@ -2,28 +2,23 @@
 #define TYPE_H
 
 #include <inttypes.h>
+#include <Constant.h>
 
 /** A type is a descriptor, and should not be inherited. It should be composed
     into classes that subclass Constant or Variable. */
-class Type {
+class Type : public Constant {
 public:
-    static Type *GetIntTy();
-    static Type *GetInt64Ty();
-    static Type *GetFloatTy();
-    static Type *GetStringTy();
-    static Type *GetByteStringTy();
-    static Type *GetBoolTy();
-    static Type *GetNoneTy();
-    static Type *GetFrozenSetTy();
-    static Type *GetSetTy();
-    static Type *GetListTy();
-    static Type *GetDictTy();
-    static Type *GetTupleTy();
-    static Type *GetCodeTy();
-    static Type *GetCellTy();
-    static Type *GetFunctionTy();
+    static Type *For(Object *obj);
 
-    static uint16_t TagFor(Type *t);
+    Type(std::string &name, Object *ex);
+    
+    virtual const std::string Repr();
+
+private:
+    /** Stringified representation of this type, for comparison and printing. */
+    std::string m_name;
+    /** An instance of this class for introspection. */
+    Object *m_example;
 };
 
 #endif

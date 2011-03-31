@@ -5,18 +5,13 @@
 
 #include <jit/jit.h>
 
-class Type;
 class Function;
 
 /** A value is any piece of data that can be used in an instruction. */
 class Value : public Object {
 public:
     Value() :
-        m_ty(0), m_jit_value(0), m_bytecode_offset(0) {
-    }
-
-    void SetType(Type *ty) {
-        m_ty = ty;
+        m_jit_value(0), m_bytecode_offset(0) {
     }
 
     virtual bool IsValue() {
@@ -40,8 +35,6 @@ public:
     }
 
 private:
-    Type *m_ty;
-
     virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f) {
         std::cerr << "LJ_Codegen: Unimplemented: " << Repr() << std::endl;
         return NULL;
