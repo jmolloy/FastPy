@@ -23,7 +23,7 @@ public:
         Ideally this would be in a low-cohesion unit that visits each instruction
         however this would require lots of type-checks at runtime and I felt
         that the high cohesion is worth it for the overhead reduction. */
-    jit_value_t LJ_Codegen(jit_function_t func, Function *f) {
+    virtual jit_value_t LJ_Codegen(jit_function_t func, Function *f) {
         if(!m_jit_value) {
             m_jit_value = _LJ_Codegen(func, f);
         }

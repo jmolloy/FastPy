@@ -1,6 +1,7 @@
 #include <Type.h>
 #include <map>
 #include <sstream>
+#include <typeinfo>
 
 std::map<std::string, Type*> g_types;
 

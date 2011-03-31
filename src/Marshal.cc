@@ -290,7 +290,8 @@ Object *Marshal::ReadObject(std::istream &is, Errors &e) {
 }
 
 Object *Marshal::ReadString(std::string str) {
-    std::stringstream ss(str);
+    std::istringstream ss(str, std::ios::binary);
+    
     Errors e;
     Object *o = ReadObject(ss, e);
     if(!o || e.WasError()) {

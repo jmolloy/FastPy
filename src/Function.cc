@@ -71,6 +71,7 @@ jit_function_t Function::LJ_Codegen(jit_context_t ctx) {
                                                      args,
                                                      nargs,
                                                      1);
+    assert(signature);
     delete [] args;
 
     m_jit_function = jit_function_create(ctx, signature);

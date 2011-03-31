@@ -22,6 +22,7 @@ static jit_type_t _LJ_fn_signature(int nargs) {
                                                tyargs,
                                                nargs,
                                                1);
+    assert(sig);
     delete [] tyargs;
     return sig;
 }
@@ -35,7 +36,6 @@ static jit_value_t _LJ_Call(jit_function_t func, const char *name, void *fp, jit
     jit_value_t args[2];
     args[0] = jit_value_create_nint_constant(func, jit_type_nuint, (jit_nuint)fp);
     args[1] = arg0;
-
     return jit_insn_call_native(func, name, (void*)&FPyRuntime_CallC_LJ, _LJ_fn_signature(1), args, 2, 0);
 }
 static jit_value_t _LJ_Call(jit_function_t func, const char *name, void *fp, jit_value_t arg0, jit_value_t arg1) {
@@ -69,10 +69,12 @@ static jit_value_t _LJ_CallVtable(jit_function_t func, int idx, jit_value_t obj)
 
 static jit_value_t _LJ_CallVtable(jit_function_t func, int idx, jit_value_t obj, jit_value_t p1) {
     jit_value_t vtable_ptr = jit_insn_load_relative(func, obj, 0, jit_type_create_pointer(jit_type_nuint, 1));
+    assert(vtable_ptr);
     jit_value_t fnp = jit_insn_load_elem(func,
                                          vtable_ptr,
                                          jit_value_create_nint_constant(func, jit_type_nuint, idx),
                                          jit_type_nuint);
+    assert(fnp);
     
     jit_value_t args[4];
     args[0] = fnp;
@@ -84,11 +86,13 @@ static jit_value_t _LJ_CallVtable(jit_function_t func, int idx, jit_value_t obj,
 
 static jit_value_t _LJ_CallVtable(jit_function_t func, int idx, jit_value_t obj, jit_value_t p1, jit_value_t p2) {
     jit_value_t vtable_ptr = jit_insn_load_relative(func, obj, 0, jit_type_create_pointer(jit_type_nuint, 1));
+    assert(vtable_ptr);
     jit_value_t fnp = jit_insn_load_elem(func,
                                          vtable_ptr,
                                          jit_value_create_nint_constant(func, jit_type_nuint, idx),
                                          jit_type_nuint);
-    
+    assert(fnp);
+
     jit_value_t args[4];
     args[0] = fnp;
     args[1] = obj;
@@ -100,7 +104,8 @@ static jit_value_t _LJ_CallVtable(jit_function_t func, int idx, jit_value_t obj,
 
 jit_value_t LoadGlobal::_LJ_Codegen(jit_function_t func, Function *f) {
     jit_value_t g = jit_value_create_nint_constant(func, jit_type_nuint, (jit_nint)f->GetModule()->GetGlobals());
-    
+    assert(g);
+
     jit_insn_mark_offset(func, m_bytecode_offset);
 
     return _LJ_CallVtable(func,
@@ -110,6 +115,7 @@ jit_value_t LoadGlobal::_LJ_Codegen(jit_function_t func, Function *f) {
 
 jit_value_t StoreGlobal::_LJ_Codegen(jit_function_t func, Function *f) {
     jit_value_t g = jit_value_create_nint_constant(func, jit_type_nuint, (jit_nint)f->GetModule()->GetGlobals());
+    assert(g);
     
     jit_insn_mark_offset(func, m_bytecode_offset);
 
@@ -139,11 +145,11 @@ jit_value_t Call::_LJ_Codegen(jit_function_t func, Function *f) {
                                                tyargs,
                                                1,
                                                1);
-
+    assert(sig);
     jit_value_t arg = m_callee->LJ_Codegen(func, f);
     jit_insn_mark_offset(func, m_bytecode_offset);
     jit_value_t callee = jit_insn_call_native(func, "FPyRuntime_CheckCall", (void*)&FPyRuntime_CheckCall, sig, &arg, 1, 0);
-
+    assert(callee);
     /* Then call the function itself */
 
     jit_value_t *args = new jit_value_t[nargs];
@@ -202,6 +208,7 @@ jit_value_t TestIfFalse::_LJ_Codegen(jit_function_t func, Function *f) {
     jit_value_t eq_test = jit_insn_eq(func,
                                       m_args[0]->LJ_Codegen(func, f),
                                       Constant::GetBool(false)->LJ_Codegen(func, f));
+    assert(eq_test);
     jit_insn_branch_if(func, eq_test, b->GetSuccessor(0)->LJ_GetLabel());
 }
 
@@ -263,8 +270,13 @@ jit_value_t ReRaise::_LJ_Codegen(jit_function_t func, Function *f) {
     return 0;
 }
 
-
+/** Note the lack of underscore - these are never cached because they must
+    not cross function boundaries! */
+jit_value_t Constant::LJ_Codegen(jit_function_t func, Function *f) {
+    return _LJ_Codegen(func, f);
+}
 jit_value_t Constant::_LJ_Codegen(jit_function_t func, Function *f) {
-    /**@bug Should these be cached? they're made on a per-function basis... :/ */
-    return jit_value_create_nint_constant(func, jit_type_nuint, (jit_nuint)this);
+    jit_value_t v = jit_value_create_nint_constant(func, jit_type_nuint, (jit_nuint)this);
+    assert(v);
+    return v;
 }

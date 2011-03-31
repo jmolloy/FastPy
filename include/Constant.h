@@ -28,6 +28,7 @@ public:
         return s;
     }
 
+    virtual jit_value_t LJ_Codegen(jit_function_t func, Function *f);
     virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
 
 protected:

@@ -45,7 +45,7 @@ Object *FPyRuntime_Print(Object *obj) {
 }
 Object *FPyRuntime_PrintItem(Object *obj) {
     if(dynamic_cast<ConstantString*>(obj) != 0) {
-        printf("%s", dynamic_cast<ConstantString*>(obj)->str().c_str());
+        printf("'%s'", dynamic_cast<ConstantString*>(obj)->str().c_str());
     } else {
         printf("%s", obj->Repr().c_str() );
     }

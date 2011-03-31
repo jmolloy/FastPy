@@ -16,23 +16,15 @@
 
 jit_context_t g_lj_ctx;
 
-int g_db_print = 0;
-bool g_db_traceback_builtins = false;
-std::set<std::string> g_db_funcs;
-std::set<std::string> g_db_phases;
-
-bool db_print(Function *fn, int type) {
-    return (g_db_print & type) && (!fn ||
-        (g_db_funcs.find(fn->GetName()) != g_db_funcs.end() ||
-         g_db_funcs.find("all") != g_db_funcs.end()));
-}
-
 extern char *optarg;
 extern int optind;
 
+#if defined(REPL)
+extern void repl();
+#endif
+
 int main(int argc, char **argv) {
    
-
     struct option options[4];
     options[0].name = "db-print";
     options[0].has_arg = required_argument;
@@ -92,16 +84,17 @@ int main(int argc, char **argv) {
         }
     }
 
-    if(optind >= argc) {
-        std::cerr << "Error: No .pyc file specified!" << std::endl;
+    if(optind >= argc || argv[optind] == 0) {
+#if defined(REPL)
+        repl();
+        exit(0);
+#else
+        fprintf(stderr, "REPL not compiled in - provide a .pyc file.\n");
         exit(1);
+#endif
     }
 
     const char *fname = argv[optind];
-    if(fname == NULL) {
-        std::cerr << "Error: No .pyc file specified!" << std::endl;
-        exit(1);
-    }
 
     Marshal m;
     Code *code = dynamic_cast<Code*>(m.ReadFile(std::string(fname)));
