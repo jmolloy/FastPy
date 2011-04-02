@@ -7,6 +7,9 @@
 #include <string>
 
 #include <jit/jit.h>
+#if defined(WITH_LLVM)
+#include <llvm/Function.h>
+#endif
 
 class Cell;
 class BasicBlock;
@@ -44,6 +47,10 @@ public:
 
     jit_function_t LJ_Codegen(jit_context_t ctx=0);
 
+#if defined(WITH_LLVM)
+    llvm::Function *LLVM_Codegen(llvm::Module *m);
+#endif
+
     BasicBlock *LJ_GetCurrentBlock() {
         return m_current_block;
     }
@@ -77,9 +84,16 @@ private:
 
     jit_function_t m_jit_function;
 
+    jit_value_t m_lj_exception_object;
+
+    /** Almost an iterator - the current block being codegenned.
+
+        This is only valid during LJ_Codegen time. */
     BasicBlock *m_current_block;
 
-    jit_value_t m_lj_exception_object;
+#if defined(WITH_LLVM)
+    llvm::Function *m_llvm_function;
+#endif
 };
 
 class BuiltinFunction : public Function {

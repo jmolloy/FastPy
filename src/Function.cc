@@ -11,7 +11,17 @@
 
 #include <jit/jit-dump.h>
 
+#if defined(WITH_LLVM)
+#include <llvm/ExecutionEngine/ExecutionEngine.h>
+#include <llvm/Function.h>
+#include <llvm/Type.h>
+#include <llvm/DerivedTypes.h>
+#endif
+
 extern jit_context_t g_lj_ctx;
+#if defined(WITH_LLVM)
+extern llvm::ExecutionEngine *g_llvm_engine;
+#endif
 
 Function::Function(std::string name, Code *code, Module *module) :
     m_name(name), m_code(code), m_module(module), m_jit_function(0),
@@ -52,6 +62,108 @@ const std::string Function::Repr() {
     ss << "}";
     return ss.str();
 }
+
+#if defined(WITH_LLVM)
+llvm::Function *Function::LLVM_Codegen(llvm::Module *m) {
+    if(m_llvm_function != 0) {
+        return m_llvm_function;
+    }
+
+    /**@todo Lock the module here? */
+
+
+    /**@todo Types */
+    const llvm::Type *nint = (sizeof(void*) == 8) ?
+        static_cast<const llvm::Type*>(llvm::Type::getInt64Ty(m->getContext())) :
+        static_cast<const llvm::Type*>(llvm::Type::getInt32Ty(m->getContext()));
+    int nargs = m_code->m_argcount + m_code->m_kwonlyargcount;
+    std::vector<const llvm::Type*> args;
+    for(int i = 0; i < nargs; i++) {
+        args.push_back(nint);
+    }
+    llvm::FunctionType *fn_type = llvm::FunctionType::get(nint, args, false);    
+    assert(fn_type);
+
+    m_llvm_function = m->getFunction(m_name);
+    assert(!m_llvm_function);
+
+    m_llvm_function = llvm::Function::Create(fn_type, llvm::Function::ExternalLinkage, m_name, m);
+    assert(m_llvm_function);
+
+
+/*
+    bool uses_catcher = false;
+    for(std::vector<BasicBlock*>::iterator it = m_blocks.begin();
+        it != m_blocks.end();
+        ++it) {
+        if((*it)->GetUnwindBlock()) {
+            jit_insn_uses_catcher(m_jit_function);
+            uses_catcher = true;
+            break;
+        }
+    }
+*/
+    // m_current_block = GetEntryBlock();
+    // GetEntryBlock()->LLVM_Codegen();
+    // for(std::vector<BasicBlock*>::iterator it = m_blocks.begin();
+    //     it != m_blocks.end();
+    //     ++it) {
+    //     m_current_block = *it;
+    //     (*it)->LLVM_Codegen();
+    // }
+/*
+    if(uses_catcher) {
+        jit_insn_start_catcher(m_jit_function);
+
+        if(GetEntryBlock()->GetUnwindBlock()) {
+            BasicBlock *b=  GetEntryBlock();
+            jit_label_t lab = jit_label_undefined;
+            jit_insn_branch_if_pc_not_in_range(m_jit_function,
+                                               *b->LJ_GetLabel(),
+                                               *b->LJ_GetEndLabel(),
+                                               &lab);
+            jit_insn_branch(m_jit_function, b->GetUnwindBlock()->LJ_GetLabel());
+            jit_insn_label(m_jit_function, &lab);
+        }
+
+        for(std::vector<BasicBlock*>::iterator it = m_blocks.begin();
+            it != m_blocks.end();
+            ++it) {
+            if((*it)->GetUnwindBlock()) {
+                jit_label_t lab = jit_label_undefined;
+                jit_insn_branch_if_pc_not_in_range(m_jit_function,
+                                                   *(*it)->LJ_GetLabel(),
+                                                   *(*it)->LJ_GetEndLabel(),
+                                                   &lab);
+                jit_insn_branch(m_jit_function, (*it)->GetUnwindBlock()->LJ_GetLabel());
+                jit_insn_label(m_jit_function, &lab);
+            }
+            jit_insn_rethrow_unhandled(m_jit_function);
+        }
+
+    }
+*/
+    if(db_print(this, DB_PRINT_LLVM)) {
+        std::cout << "*** Function " << m_name << " - LLVM\n";
+        m_llvm_function->dump();
+        std::cout << "*** End Function " << m_name << "\n";
+    }
+
+    // jit_function_compile(m_jit_function);
+
+/*
+    if(db_print(this, DB_PRINT_ASM)) {
+        std::cout << "*** Function " << m_name << " - Asm\n";
+        jit_dump_function(stdout, m_jit_function, GetName().c_str());
+        std::cout << "*** End Function " << m_name << " - Asm\n";
+    }
+*/
+    /**@todo unlock here? */
+    // jit_context_build_end(ctx);
+
+    return m_llvm_function;
+}
+#endif
 
 jit_function_t Function::LJ_Codegen(jit_context_t ctx) {
     if(m_jit_function != 0) {
@@ -148,7 +260,15 @@ jit_function_t Function::LJ_Codegen(jit_context_t ctx) {
 }
 
 void *Function::GetFnPtr() {
-    return jit_function_to_closure(LJ_Codegen(g_lj_ctx));
+#if defined(WITH_LLVM)
+    if(m_llvm_function) {
+        return g_llvm_engine->getPointerToFunction(m_llvm_function);
+    } else {
+#endif
+        return jit_function_to_closure(LJ_Codegen(g_lj_ctx));
+#if defined(WITH_LLVM)
+    }
+#endif
 }
 
 const std::string BuiltinFunction::Repr() {

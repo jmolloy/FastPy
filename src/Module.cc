@@ -44,3 +44,8 @@ void Module::Dump() {
 void Module::LJ_Codegen(jit_context_t ctx) {
     jit_function_t f = m_main->LJ_Codegen(ctx);
 }
+#if defined(WITH_LLVM)
+void Module::LLVM_Codegen(llvm::Module *m) {
+    llvm::Function *f = m_main->LLVM_Codegen(m);
+}
+#endif

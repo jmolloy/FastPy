@@ -5,6 +5,10 @@
 #include <Function.h>
 #include <variables.h>
 
+#if defined(WITH_LLVM)
+# include <llvm/Module.h>
+#endif
+
 /** A container class for module-level functions and classes. */
 class Module {
 public:
@@ -24,6 +28,9 @@ public:
     }
 
     void LJ_Codegen(jit_context_t ctx);
+#if defined(WITH_LLVM)
+    void LLVM_Codegen(llvm::Module *m);
+#endif
 
     void Dump();
 
