@@ -30,7 +30,7 @@ find_path(LIBJIT_INC jit/jit.h)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
-find_package(PythonLibs)
+find_package(Python)
 find_package(Readline)
 find_package(LLVM)
 
@@ -39,7 +39,7 @@ include_directories(include)
 if(READLINE_FOUND)
   include_directories(${READLINE_INCLUDE_DIR})
 endif()
-if(PYTHON_FOUND)
+if(PYTHONLIBS_FOUND)
   include_directories(${PYTHON_INCLUDE_DIR})
 endif()
 
