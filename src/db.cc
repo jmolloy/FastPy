@@ -3,6 +3,7 @@
 
 int g_db_print = 0;
 bool g_db_traceback_builtins = false;
+bool g_force_llvm = false;
 std::set<std::string> g_db_funcs;
 std::set<std::string> g_db_phases;
 

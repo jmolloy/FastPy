@@ -5,6 +5,11 @@
 
 #include <jit/jit.h>
 
+#if defined(WITH_LLVM)
+#include <llvm/Value.h>
+#include <llvm/Support/IRBuilder.h>
+#endif
+
 class Function;
 
 /** A value is any piece of data that can be used in an instruction. */
@@ -30,6 +35,15 @@ public:
         return m_jit_value;
     }
 
+#if defined(WITH_LLVM)
+    virtual llvm::Value *LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, Function *f) {
+        if(!m_llvm_value) {
+            m_llvm_value = _LLVM_Codegen(b, func, f);
+        }
+        return m_llvm_value;
+    }
+#endif
+
     void SetBytecodeOffset(int bo) {
         m_bytecode_offset = bo;
     }
@@ -40,6 +54,14 @@ private:
         return NULL;
     }
     jit_value_t m_jit_value;
+
+#if defined(WITH_LLVM)
+    virtual llvm::Value * _LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, Function *f) {
+        std::cerr << "LLVM_Codegen: Unimplemented: " << Repr() << std::endl;
+        return NULL;
+    }
+    llvm::Value *m_llvm_value;
+#endif
 
 protected:
     int m_bytecode_offset;

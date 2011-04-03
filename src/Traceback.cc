@@ -6,6 +6,10 @@
 #include <cxxabi.h>
 #include <constants.h>
 
+#if defined(WITH_LLVM)
+#include <LLVM_Support.h>
+#endif
+
 extern jit_context_t g_lj_ctx;
 extern bool g_db_traceback_builtins;
 
@@ -17,7 +21,7 @@ const std::string Traceback::Repr() {
     std::stringstream ss;
     /* Skip the top two frames as they are our and the exception's constructor. */
     for(int i = jit_stack_trace_get_size(m_stack_trace)-1; i >= 2 ; i--) {
-        if(jit_stack_trace_get_function(g_lj_ctx, m_stack_trace, i) != NULL) {
+        if(g_lj_ctx && jit_stack_trace_get_function(g_lj_ctx, m_stack_trace, i) != NULL) {
 
             jit_function_t func = jit_stack_trace_get_function(g_lj_ctx, m_stack_trace, i);
 
@@ -27,6 +31,14 @@ const std::string Traceback::Repr() {
 
 
             ss << "  File \"" << f->GetCode()->m_filename->str() << "\", line " << lno << ", in " << f->GetCode()->m_name->str() << "\n";
+#if defined(WITH_LLVM)
+        } else if(LLVM_AddressContainedInJITFunction(jit_stack_trace_get_pc(m_stack_trace, i))) {
+
+            Function *f = LLVM_GetFunction(jit_stack_trace_get_pc(m_stack_trace, i));
+            int lno = LLVM_GetLineNo(jit_stack_trace_get_pc(m_stack_trace, i));
+            
+            ss << "  File \"" << f->GetCode()->m_filename->str() << "\", line " << lno << ", in " << f->GetCode()->m_name->str() << "\n";
+#endif
 #if defined(TRACEBACK_SHOW_BUILTINS)
         } else if(g_db_traceback_builtins) {
             void *ptr = jit_stack_trace_get_pc(m_stack_trace, i);

@@ -18,6 +18,8 @@ set(SRCS
   src/instructions.cc
   src/Module.cc
   src/LJ_Codegen.cc
+  src/LLVM_Codegen.cc
+  src/LLVM_Support.cc
   src/PyRuntime.cc
   src/Object.cc
   src/Exception.cc

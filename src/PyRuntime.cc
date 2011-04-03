@@ -94,6 +94,53 @@ Object *FPyRuntime_CallC_LJ(void *fn, Object *self, Object *p1, Object *p2, Obje
     }
 }
 
+Object *FPyRuntime_CallC_LLVM(void *fn, Object *self, Object *p1, Object *p2, Object *p3, Object *p4, Object *p5) {
+#if defined(TRACE_C_CALLS)
+    int num_args;
+    if(db_print(0, DB_PRINT_C_CALLS)) {
+        printf("*** ");
+        num_args = print_function_name(fn);
+        printf("(");
+        if(num_args > 0) printf("%.20s, ", self->Repr().c_str());
+        if(num_args > 1) printf("%.20s, ", p1->Repr().c_str());
+        if(num_args > 2) printf("%.20s, ", p2->Repr().c_str());
+        if(num_args > 3) printf("%.20s, ", p3->Repr().c_str());
+        if(num_args > 4) printf("%.20s, ", p4->Repr().c_str());
+        if(num_args > 5) printf("%.20s, ", p5->Repr().c_str());
+
+        if(num_args == -1) printf("%p, %p, %p, %p, %p, %p", self, p1, p2, p3, p4,p5);
+        printf(")\n");
+    }
+#endif
+        typedef Object *(*FnTy)(Object*,Object*,Object*,Object*,Object*,Object*);
+        FnTy _fn = (FnTy)fn;
+
+        Object *r = _fn(self, p1, p2, p3, p4, p5);
+#if defined(TRACE_C_CALLS)
+    if(db_print(0, DB_PRINT_C_CALLS)) {
+        if(num_args == -1) {
+            fprintf(stdout, "***  -> %p\n", r);
+        } else {
+            fprintf(stdout, "***  -> %.20s\n", r->Repr().c_str());
+        }
+    }
+#endif
+        return r;
+}
+
+Object *FPyRuntime_CallC_LLVM1(void *fn, Object *self, Object *p1, Object *p2, Object *p3, Object *p4, Object *p5) {
+    return FPyRuntime_CallC_LLVM(fn, self, p1, p2, p3, p4, p5);
+}
+Object *FPyRuntime_CallC_LLVM2(void *fn, Object *self, Object *p1, Object *p2, Object *p3, Object *p4, Object *p5) {
+    return FPyRuntime_CallC_LLVM(fn, self, p1, p2, p3, p4, p5);
+}
+Object *FPyRuntime_CallC_LLVM3(void *fn, Object *self, Object *p1, Object *p2, Object *p3, Object *p4, Object *p5) {
+    return FPyRuntime_CallC_LLVM(fn, self, p1, p2, p3, p4, p5);
+}
+Object *FPyRuntime_CallC_LLVM4(void *fn, Object *self, Object *p1, Object *p2, Object *p3, Object *p4, Object *p5) {
+    return FPyRuntime_CallC_LLVM(fn, self, p1, p2, p3, p4, p5);
+}
+
 void PopulateDictWithBuiltins(Dict *dict) {
     dict->Set(Constant::GetString("print"), new BuiltinFunction((void*)&FPyRuntime_Print));
     dict->Set(Constant::GetString("int"), Type::For(Constant::GetInt(0)));

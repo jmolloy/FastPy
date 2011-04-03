@@ -16,6 +16,8 @@
 #include <llvm/Function.h>
 #include <llvm/Type.h>
 #include <llvm/DerivedTypes.h>
+
+#include <LLVM_Support.h>
 #endif
 
 extern jit_context_t g_lj_ctx;
@@ -25,7 +27,7 @@ extern llvm::ExecutionEngine *g_llvm_engine;
 
 Function::Function(std::string name, Code *code, Module *module) :
     m_name(name), m_code(code), m_module(module), m_jit_function(0),
-    m_current_block(0), m_lj_exception_object(NULL) {
+    m_current_block(0), m_lj_exception_object(NULL), m_llvm_function(0) {
     m_entry_block = new BasicBlock(this);
 
 #if 0
@@ -64,6 +66,7 @@ const std::string Function::Repr() {
 }
 
 #if defined(WITH_LLVM)
+extern llvm::Type *g_object_ty;
 llvm::Function *Function::LLVM_Codegen(llvm::Module *m) {
     if(m_llvm_function != 0) {
         return m_llvm_function;
@@ -73,15 +76,12 @@ llvm::Function *Function::LLVM_Codegen(llvm::Module *m) {
 
 
     /**@todo Types */
-    const llvm::Type *nint = (sizeof(void*) == 8) ?
-        static_cast<const llvm::Type*>(llvm::Type::getInt64Ty(m->getContext())) :
-        static_cast<const llvm::Type*>(llvm::Type::getInt32Ty(m->getContext()));
     int nargs = m_code->m_argcount + m_code->m_kwonlyargcount;
     std::vector<const llvm::Type*> args;
     for(int i = 0; i < nargs; i++) {
-        args.push_back(nint);
+        args.push_back(g_object_ty);
     }
-    llvm::FunctionType *fn_type = llvm::FunctionType::get(nint, args, false);    
+    llvm::FunctionType *fn_type = llvm::FunctionType::get(g_object_ty, args, false);
     assert(fn_type);
 
     m_llvm_function = m->getFunction(m_name);
@@ -90,66 +90,23 @@ llvm::Function *Function::LLVM_Codegen(llvm::Module *m) {
     m_llvm_function = llvm::Function::Create(fn_type, llvm::Function::ExternalLinkage, m_name, m);
     assert(m_llvm_function);
 
+    g_llvm_function_map[m_llvm_function] = this;
 
-/*
-    bool uses_catcher = false;
+    m_current_block = GetEntryBlock();
+    GetEntryBlock()->LLVM_Codegen(m);
     for(std::vector<BasicBlock*>::iterator it = m_blocks.begin();
         it != m_blocks.end();
         ++it) {
-        if((*it)->GetUnwindBlock()) {
-            jit_insn_uses_catcher(m_jit_function);
-            uses_catcher = true;
-            break;
-        }
+        m_current_block = *it;
+        (*it)->LLVM_Codegen(m);
     }
-*/
-    // m_current_block = GetEntryBlock();
-    // GetEntryBlock()->LLVM_Codegen();
-    // for(std::vector<BasicBlock*>::iterator it = m_blocks.begin();
-    //     it != m_blocks.end();
-    //     ++it) {
-    //     m_current_block = *it;
-    //     (*it)->LLVM_Codegen();
-    // }
-/*
-    if(uses_catcher) {
-        jit_insn_start_catcher(m_jit_function);
 
-        if(GetEntryBlock()->GetUnwindBlock()) {
-            BasicBlock *b=  GetEntryBlock();
-            jit_label_t lab = jit_label_undefined;
-            jit_insn_branch_if_pc_not_in_range(m_jit_function,
-                                               *b->LJ_GetLabel(),
-                                               *b->LJ_GetEndLabel(),
-                                               &lab);
-            jit_insn_branch(m_jit_function, b->GetUnwindBlock()->LJ_GetLabel());
-            jit_insn_label(m_jit_function, &lab);
-        }
-
-        for(std::vector<BasicBlock*>::iterator it = m_blocks.begin();
-            it != m_blocks.end();
-            ++it) {
-            if((*it)->GetUnwindBlock()) {
-                jit_label_t lab = jit_label_undefined;
-                jit_insn_branch_if_pc_not_in_range(m_jit_function,
-                                                   *(*it)->LJ_GetLabel(),
-                                                   *(*it)->LJ_GetEndLabel(),
-                                                   &lab);
-                jit_insn_branch(m_jit_function, (*it)->GetUnwindBlock()->LJ_GetLabel());
-                jit_insn_label(m_jit_function, &lab);
-            }
-            jit_insn_rethrow_unhandled(m_jit_function);
-        }
-
-    }
-*/
     if(db_print(this, DB_PRINT_LLVM)) {
         std::cout << "*** Function " << m_name << " - LLVM\n";
         m_llvm_function->dump();
         std::cout << "*** End Function " << m_name << "\n";
     }
 
-    // jit_function_compile(m_jit_function);
 
 /*
     if(db_print(this, DB_PRINT_ASM)) {
@@ -159,7 +116,6 @@ llvm::Function *Function::LLVM_Codegen(llvm::Module *m) {
     }
 */
     /**@todo unlock here? */
-    // jit_context_build_end(ctx);
 
     return m_llvm_function;
 }

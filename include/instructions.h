@@ -18,6 +18,9 @@ public:
     }
 
     virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
+#if defined(WITH_LLVM)
+    virtual llvm::Value *_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, Function *f);
+#endif
 };
 class StoreLocal : public Instruction {
 public:
@@ -35,6 +38,9 @@ public:
     }
 
     virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
+#if defined(WITH_LLVM)
+    virtual llvm::Value *_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, Function *f);
+#endif
 };
 class LoadLocal : public Instruction {
 public:
@@ -67,6 +73,9 @@ public:
     }
 
     virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
+#if defined(WITH_LLVM)
+    virtual llvm::Value *_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, Function *f);
+#endif
 };
 class TestIfFalse : public Instruction {
 public:
@@ -76,6 +85,9 @@ public:
     }
     
     virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
+#if defined(WITH_LLVM)
+    virtual llvm::Value *_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, Function *f);
+#endif
 };
 class TestIfTrue : public Instruction {
 public:
@@ -124,6 +136,9 @@ public:
     }
 
     virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
+#if defined(WITH_LLVM)
+    virtual llvm::Value *_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, Function *f);
+#endif
 };
 class BeginCatch_GetTraceback : public Instruction {
 public:
@@ -144,6 +159,9 @@ public:
     virtual const std::string Repr();
 
     virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
+#if defined(WITH_LLVM)
+    virtual llvm::Value *_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, Function *f);
+#endif
 
     enum cmp_op {PyCmp_LT, PyCmp_LE, PyCmp_EQ, PyCmp_NE, PyCmp_GT, PyCmp_GE,
                  PyCmp_IN, PyCmp_NOT_IN, PyCmp_IS, PyCmp_IS_NOT, PyCmp_EXC_MATCH,
@@ -158,6 +176,9 @@ public:
         m_args.push_back(v);
     }
     virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
+#if defined(WITH_LLVM)
+    virtual llvm::Value *_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, Function *f);
+#endif
 };
 class PrintNewline : public Instruction {
 public:
@@ -165,6 +186,9 @@ public:
         Instruction("print-newline", id) {
     }
     virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
+#if defined(WITH_LLVM)
+    virtual llvm::Value *_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, Function *f);
+#endif
 };
 class ReRaise : public Instruction {
 public:

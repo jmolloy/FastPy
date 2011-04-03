@@ -31,6 +31,11 @@ public:
     virtual jit_value_t LJ_Codegen(jit_function_t func, Function *f);
     virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
 
+#if defined(WITH_LLVM)
+    llvm::Value *LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, Function *f);
+    llvm::Value *_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, Function *f);
+#endif
+
 protected:
     virtual char GetWart() {
         return '@';

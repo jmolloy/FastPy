@@ -15,10 +15,17 @@
 #include <sstream>
 #include <iostream>
 
+#if defined(WITH_LLVM)
+#include <llvm/Support/IRBuilder.h>
+#endif
+
 BasicBlock::BasicBlock(Function *parent) :
     m_num_successors(0), m_stack(new OperandStack()), m_fn(parent),
     m_jit_label(jit_label_undefined),
     m_jit_end_label(jit_label_undefined),
+#if defined(WITH_LLVM)
+    m_llvm_block(0),
+#endif
     m_unwind_block(NULL)
 {
     m_successors[0] = NULL;
@@ -366,3 +373,29 @@ jit_label_t *BasicBlock::LJ_GetLabel() {
 jit_label_t *BasicBlock::LJ_GetEndLabel() {
     return &m_jit_end_label;
 }
+
+#if defined(WITH_LLVM)
+llvm::BasicBlock *BasicBlock::LLVM_GetBlock(llvm::Function *func) {
+    if(!m_llvm_block) {
+        m_llvm_block = llvm::BasicBlock::Create(func->getContext(), "", func);
+    }
+    return m_llvm_block;
+}
+
+void BasicBlock::LLVM_Codegen(llvm::Module *m) {
+    llvm::Function *func = m_fn->LLVM_Codegen(m);
+
+    LLVM_GetBlock(func);
+
+    llvm::IRBuilder<> b(m_llvm_block);
+
+    for(std::vector<Instruction*>::iterator it = m_all_instructions.begin();
+        it != m_all_instructions.end();
+        ++it) {
+        (*it)->LLVM_Codegen(b, func, m_fn);
+    }
+    if(m_num_successors == 1) {
+        b.CreateBr(GetSuccessor(0)->LLVM_GetBlock(func));
+    }
+}
+#endif

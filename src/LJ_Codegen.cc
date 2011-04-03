@@ -213,11 +213,11 @@ jit_value_t TestIfFalse::_LJ_Codegen(jit_function_t func, Function *f) {
 }
 
 jit_value_t PrintItem::_LJ_Codegen(jit_function_t func, Function *f) {
-    jit_insn_mark_offset(func, m_bytecode_offset);
+//    jit_insn_mark_offset(func, m_bytecode_offset);
     return _LJ_Call(func, "FPyRuntime_PrintItem", (void*)&FPyRuntime_PrintItem, m_args[0]->LJ_Codegen(func, f));
 }
 jit_value_t PrintNewline::_LJ_Codegen(jit_function_t func, Function *f) {
-    jit_insn_mark_offset(func, m_bytecode_offset);
+//    jit_insn_mark_offset(func, m_bytecode_offset);
     return _LJ_Call(func, "FPyRuntime_PrintNewline", (void*)&FPyRuntime_PrintNewline);
 }
 

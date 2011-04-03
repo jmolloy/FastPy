@@ -15,6 +15,12 @@
 
 #include <jit/jit.h>
 
+#if defined(WITH_LLVM)
+#include <llvm/Module.h>
+#include <llvm/Function.h>
+#include <llvm/BasicBlock.h>
+#endif
+
 class OperandStack;
 class Function;
 class Instruction;
@@ -101,6 +107,12 @@ public:
     jit_label_t *LJ_GetLabel();
     jit_label_t *LJ_GetEndLabel();
 
+#if defined(WITH_LLVM)
+    void LLVM_Codegen(llvm::Module *m);
+
+    llvm::BasicBlock *LLVM_GetBlock(llvm::Function *func);
+#endif
+
 protected:
     char GetWart() {
         return ':';
@@ -134,6 +146,10 @@ private:
     BasicBlock *m_unwind_block;
 
     jit_label_t m_jit_label, m_jit_end_label;
+
+#if defined(WITH_LLVM)
+    llvm::BasicBlock *m_llvm_block;
+#endif
 };
 
 #endif

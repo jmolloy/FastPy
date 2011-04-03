@@ -14,7 +14,16 @@
 #include <getopt.h>
 #include <db.h>
 
-jit_context_t g_lj_ctx;
+#if defined(WITH_LLVM)
+#include <LLVM_Support.h>
+/** This is a nasty hack which results from inheriting from an LLVM class
+    which is not compiled with RTTI. */
+void *_ZTIN4llvm16JITEventListenerE;
+
+
+#endif
+
+jit_context_t g_lj_ctx = 0;
 
 extern char *optarg;
 extern int optind;
@@ -25,7 +34,7 @@ extern void repl();
 
 int main(int argc, char **argv) {
    
-    struct option options[4];
+    struct option options[5];
     options[0].name = "db-print";
     options[0].has_arg = required_argument;
     options[0].flag = 0;
@@ -46,7 +55,12 @@ int main(int argc, char **argv) {
     options[3].flag = 0;
     options[3].val = 0;
 
-    memset(&options[4], 0, sizeof(struct option));
+    options[4].name = "force-llvm";
+    options[4].has_arg = no_argument;
+    options[4].flag = 0;
+    options[4].val = 0;
+
+    memset(&options[5], 0, sizeof(struct option));
 
     int indexptr;
     char ret;
@@ -79,10 +93,17 @@ int main(int argc, char **argv) {
             g_db_phases.insert(std::string(optarg));
         } else if(!strcmp(options[indexptr].name, "db-traceback-builtins")) {
             g_db_traceback_builtins = true;
+        } else if(!strcmp(options[indexptr].name, "force-llvm")) {
+            g_force_llvm = true;
         } else {
             abort();
         }
     }
+
+    g_lj_ctx = jit_context_create();
+#if defined(WITH_LLVM)
+    llvm::Module *module = LLVM_Initialize();
+#endif
 
     if(optind >= argc || argv[optind] == 0) {
 #if defined(REPL)
@@ -101,17 +122,27 @@ int main(int argc, char **argv) {
     assert(code);
     Module *__main__ = new Module("__main__", code);
 
-    g_lj_ctx = jit_context_create();
-    __main__->LJ_Codegen(g_lj_ctx);
+    if(!g_force_llvm) {
+        __main__->LJ_Codegen(g_lj_ctx);
 
-    unsigned long result;
-    jit_function_apply(__main__->GetMainFunction()->LJ_Codegen(g_lj_ctx),
-                       0,
-                       &result);
-    if(jit_exception_get_last() != 0) {
-        Exception *e = reinterpret_cast<Exception*>(jit_exception_get_last_and_clear());
-        std::cerr << e->Repr() << std::endl;
-    } 
-
+        unsigned long result;
+        jit_function_apply(__main__->GetMainFunction()->LJ_Codegen(g_lj_ctx),
+                           0,
+                           &result);
+        if(jit_exception_get_last() != 0) {
+            Exception *e = reinterpret_cast<Exception*>(jit_exception_get_last_and_clear());
+            std::cerr << e->Repr() << std::endl;
+        } 
+    } else {
+#if defined(WITH_LLVM)
+        __main__->LLVM_Codegen(module);
+        void *p = __main__->GetMainFunction()->GetFnPtr();
+    
+        LLVM_Invoke(p);
+#else
+        std::cerr << "Error: LLVM not compiled in.\n";
+        return 1;
+#endif
+    }
     return 0;
 }

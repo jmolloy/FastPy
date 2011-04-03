@@ -13,6 +13,7 @@
 bool db_print(Function *fn, int type);
 
 extern int g_db_print;
+extern bool g_force_llvm;
 extern bool g_db_traceback_builtins;
 extern std::set<std::string> g_db_funcs;
 extern std::set<std::string> g_db_phases;

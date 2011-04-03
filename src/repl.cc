@@ -6,7 +6,13 @@
 #include <python2.7/Python.h>
 #include <jit/jit.h>
 
+#include <db.h>
+
 extern jit_context_t g_lj_ctx;
+#if defined(WITH_LLVM)
+#include <LLVM_Support.h>
+extern llvm::Module *g_llvm_module;
+#endif
 
 extern std::string get_statement();
 extern "C" PyObject* PyMarshal_WriteObjectToString(PyObject *, int);
@@ -38,19 +44,35 @@ void repl() {
         assert(code);
 
         Module *__main__ = new Module("__main__", code);
-        __main__->LJ_Codegen(g_lj_ctx);
 
-        Object *result;
-        jit_function_apply(__main__->GetMainFunction()->LJ_Codegen(g_lj_ctx),
-                           0,
-                           (void*)&result);
-        if(jit_exception_get_last() != 0) {
-            Exception *e = reinterpret_cast<Exception*>(jit_exception_get_last_and_clear());
-            std::cerr << e->Repr() << std::endl;
+        if(!g_force_llvm) {
+            __main__->LJ_Codegen(g_lj_ctx);
+
+            Object *result;
+            jit_function_apply(__main__->GetMainFunction()->LJ_Codegen(g_lj_ctx),
+                               0,
+                               (void*)&result);
+            if(jit_exception_get_last() != 0) {
+                Exception *e = reinterpret_cast<Exception*>(jit_exception_get_last_and_clear());
+                std::cerr << e->Repr() << std::endl;
+            } else {
+                if(result != Constant::GetNone()) {
+                    std::cout << result->Repr() << std::endl;
+                }
+            }
         } else {
-            if(result != Constant::GetNone()) {
+#if defined(WITH_LLVM)
+            __main__->LLVM_Codegen(g_llvm_module);
+            void *p = __main__->GetMainFunction()->GetFnPtr();
+    
+            Object *result = LLVM_Invoke(p);
+            if(result && result != Constant::GetNone()) {
                 std::cout << result->Repr() << std::endl;
             }
+#else
+            std::cerr << "Error: LLVM not compiled in.\n";
+            return 1;
+#endif
         }
 
         Py_DECREF(obj);

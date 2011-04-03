@@ -17,7 +17,7 @@ Code::Code(long argcount, long kwonlyargcount, long nlocals, long stacksize,
     m_argcount(argcount), m_kwonlyargcount(kwonlyargcount), m_nlocals(nlocals),
     m_stacksize(stacksize), m_flags(flags), m_code(code), m_consts(consts),
     m_names(names), m_varnames(varnames), m_freevars(freevars), m_cellvars(cellvars),
-    m_filename(filename), m_name(name), m_lnotab(lnotab)
+    m_filename(filename), m_name(name), m_firstlineno(firstlineno), m_lnotab(lnotab)
 {
 }
 
@@ -60,8 +60,8 @@ unsigned char Code::NextOp(long &i, long &arg) {
 
 int Code::GetLineNo(int offs) {
     /* http://hg.python.org/cpython/file/default/Objects/lnotab_notes.txt */
+    int lineno = m_firstlineno;
 
-    int lineno = m_firstlineno+1;
     int addr = 0;
     unsigned char *lnotab = m_lnotab->GetPtr();
     int i = 0;
@@ -69,7 +69,6 @@ int Code::GetLineNo(int offs) {
     while(i < m_lnotab->m_sz) {
         unsigned char addr_incr = lnotab[i++];
         unsigned char line_incr = lnotab[i++];
-
         addr += addr_incr;
         if(addr > offs) {
             return lineno;
