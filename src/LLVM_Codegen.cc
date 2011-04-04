@@ -28,6 +28,11 @@ static llvm::Value *_LLVM_GetVoidPtr(llvm::IRBuilder<> &b, void *ptr) {
     assert(constant);
     return b.CreateIntToPtr(constant, g_u8_ptr_ty);
 }
+static llvm::Value *_LLVM_GetObjPtr(llvm::IRBuilder<> &b, void *ptr) {
+    llvm::Value *constant = llvm::ConstantInt::get(g_nint_ty, (uint64_t)ptr);
+    assert(constant);
+    return b.CreateIntToPtr(constant, g_object_ty);
+}
 
 static void _LLVM_SetLine(llvm::Value *v, Function *f, int bc_off) {
     llvm::Instruction *i = dynamic_cast<llvm::Instruction*>(v);
@@ -224,11 +229,32 @@ llvm::Value *Compare::_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, 
         case PyCmp_GE:
             vtable_idx = Object::idx__Ge__;
             break;
-        case PyCmp_IS:
-        case PyCmp_IS_NOT:
-        case PyCmp_EXC_MATCH:
+        case PyCmp_IS: {
+            llvm::Value *i = b.CreateICmpEQ(m_args[0]->LLVM_Codegen(b, func, f),
+                                            m_args[1]->LLVM_Codegen(b, func, f));
+            _LLVM_SetLine(i, f, m_bytecode_offset);
+            return i;
+        }
+        case PyCmp_IS_NOT: {
+            llvm::Value *i = b.CreateICmpNE(m_args[0]->LLVM_Codegen(b, func, f),
+                                            m_args[1]->LLVM_Codegen(b, func, f));
+            _LLVM_SetLine(i, f, m_bytecode_offset);
+            return i;
+        }
+
         case PyCmp_IN:
+            vtable_idx = Object::idx__Contains__;
+            break;
         case PyCmp_NOT_IN:
+            vtable_idx = Object::idx__NotContains__;
+            break;
+        case PyCmp_EXC_MATCH: {
+            llvm::Value *i = _LLVM_Call(b, func, "FPyRuntime_ExceptionCompare", (void*)&FPyRuntime_ExceptionCompare, 
+                                        m_args[0]->LLVM_Codegen(b, func, f),
+                                        m_args[1]->LLVM_Codegen(b, func, f));
+            _LLVM_SetLine(i, f, m_bytecode_offset);
+            return i;
+        }
         default:
             std::cerr << "Unimplemented compare operation\n";
     }
@@ -288,7 +314,7 @@ llvm::Value *Constant::LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, 
     return _LLVM_Codegen(b, func, f);
 }
 llvm::Value *Constant::_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, Function *f) {
-    llvm::Value *obj = _LLVM_GetVoidPtr(b, (void*)this);
+    llvm::Value *obj = _LLVM_GetObjPtr(b, (void*)this);
     assert(obj);
     return obj;
 }

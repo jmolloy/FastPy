@@ -48,6 +48,9 @@ const std::string Tuple::Repr() {
     for(std::vector<Value*>::iterator it = m_l.begin();
         it != m_l.end();
         it++) {
+        if(*it == 0) {
+            continue;
+        }
         if(first) {
             first = false;
         } else {

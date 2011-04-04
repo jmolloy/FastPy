@@ -1,4 +1,9 @@
 try:
     print x
-except Exception, e:
+except NotImplementedError, e:
+    print "E is "
     print e
+    print "Motherfucker"
+except RuntimeError:
+    print "EEK"
+

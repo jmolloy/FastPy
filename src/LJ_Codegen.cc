@@ -101,6 +101,10 @@ static jit_value_t _LJ_CallVtable(jit_function_t func, int idx, jit_value_t obj,
     return jit_insn_call_native(func, "FPyRuntime_CallC_LJ", (void*)&FPyRuntime_CallC_LJ, _LJ_fn_signature(3), args, 4, 0);
 }
 
+static jit_value_t _LJ_AllocMemory(Instruction *i, jit_function_t func, size_t sz) {
+    return _LJ_Call(func, "malloc", (void*)&malloc, jit_value_create_nint_constant(func, jit_type_nuint, (jit_nuint)sz));
+}
+
 
 jit_value_t LoadGlobal::_LJ_Codegen(jit_function_t func, Function *f) {
     jit_value_t g = jit_value_create_nint_constant(func, jit_type_nuint, (jit_nint)f->GetModule()->GetGlobals());
@@ -164,6 +168,8 @@ jit_value_t Call::_LJ_Codegen(jit_function_t func, Function *f) {
 }
 
 jit_value_t Compare::_LJ_Codegen(jit_function_t func, Function *f) {
+    jit_insn_mark_offset(func, m_bytecode_offset);
+
     int vtable_idx = -1;
     switch(m_op) {
         case PyCmp_LT:
@@ -185,15 +191,28 @@ jit_value_t Compare::_LJ_Codegen(jit_function_t func, Function *f) {
             vtable_idx = Object::idx__Ge__;
             break;
         case PyCmp_IS:
+            return  jit_insn_eq(func,
+                                m_args[0]->LJ_Codegen(func, f),
+                                m_args[1]->LJ_Codegen(func, f));
         case PyCmp_IS_NOT:
-        case PyCmp_EXC_MATCH:
+            return  jit_insn_ne(func,
+                                m_args[0]->LJ_Codegen(func, f),
+                                m_args[1]->LJ_Codegen(func, f));
+
         case PyCmp_IN:
+            vtable_idx = Object::idx__Contains__;
+            break;
         case PyCmp_NOT_IN:
+            vtable_idx = Object::idx__NotContains__;
+            break;
+        case PyCmp_EXC_MATCH: {
+            return _LJ_Call(func, "FPyRuntime_ExceptionCompare", (void*)&FPyRuntime_ExceptionCompare,
+                            m_args[0]->LJ_Codegen(func, f),
+                            m_args[1]->LJ_Codegen(func, f));
+        }
         default:
             std::cerr << "Unimplemented compare operation\n";
     }
-
-    jit_insn_mark_offset(func, m_bytecode_offset);
 
     return _LJ_CallVtable(func,
                           vtable_idx,
@@ -222,6 +241,7 @@ jit_value_t PrintNewline::_LJ_Codegen(jit_function_t func, Function *f) {
 }
 
 jit_value_t BeginCatch_GetType::_LJ_Codegen(jit_function_t func, Function *f) {
+    jit_insn_mark_offset(func, m_bytecode_offset);
     jit_value_t exc = f->LJ_GetExceptionObject();
     if(exc == 0) {
         exc = jit_insn_thrown_exception(func);
@@ -235,6 +255,7 @@ jit_value_t BeginCatch_GetType::_LJ_Codegen(jit_function_t func, Function *f) {
 }
 
 jit_value_t BeginCatch_GetValue::_LJ_Codegen(jit_function_t func, Function *f) {
+    jit_insn_mark_offset(func, m_bytecode_offset);
     jit_value_t exc = f->LJ_GetExceptionObject();
     if(exc == 0) {
         exc = jit_insn_thrown_exception(func);
@@ -246,6 +267,7 @@ jit_value_t BeginCatch_GetValue::_LJ_Codegen(jit_function_t func, Function *f) {
 }
 
 jit_value_t BeginCatch_GetTraceback::_LJ_Codegen(jit_function_t func, Function *f) {
+    jit_insn_mark_offset(func, m_bytecode_offset);
     jit_value_t exc = f->LJ_GetExceptionObject();
     if(exc == 0) {
         exc = jit_insn_thrown_exception(func);
@@ -258,6 +280,7 @@ jit_value_t BeginCatch_GetTraceback::_LJ_Codegen(jit_function_t func, Function *
 }
 
 jit_value_t ReRaise::_LJ_Codegen(jit_function_t func, Function *f) {
+    jit_insn_mark_offset(func, m_bytecode_offset);
     jit_value_t exc = f->LJ_GetExceptionObject();
     if(exc == 0) {
         exc = jit_insn_thrown_exception(func);
@@ -268,6 +291,23 @@ jit_value_t ReRaise::_LJ_Codegen(jit_function_t func, Function *f) {
     _LJ_Call(func, "jit_exception_clear_last", (void*)&jit_exception_clear_last);
     jit_insn_rethrow_unhandled(func);
     return 0;
+}
+
+/* Tuple::Tuple(int) */
+extern void *_ZN5TupleC1Ei;
+/* Tuple::Set(long, Value*) */
+extern void *_ZN5Tuple3SetElP5Value;
+
+jit_value_t BuildTuple::_LJ_Codegen(jit_function_t func, Function *f) {
+    jit_insn_mark_offset(func, m_bytecode_offset);
+    /* Allocate the memory for the tuple - this is seperated so that escape analysis can decide where
+       the memory should be allocated (heap or stack). */
+    jit_value_t v = _LJ_AllocMemory(this, func, sizeof(Tuple));
+    _LJ_Call(func, "_ZN5TupleC1Ei", (void*)&_ZN5TupleC1Ei, v, jit_value_create_nint_constant(func, jit_type_nuint, (jit_nuint)m_n));
+    for(int i = 0; i < m_n; i++) {
+        _LJ_Call(func, "_ZN5Tuple3SetElP5Value", (void*)&_ZN5Tuple3SetElP5Value, v, jit_value_create_nint_constant(func, jit_type_nuint, (jit_nuint)i), m_args[i]->LJ_Codegen(func, f));
+    }
+    return v;
 }
 
 /** Note the lack of underscore - these are never cached because they must

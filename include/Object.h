@@ -43,8 +43,10 @@ public:
         idx__Eq__ = 12,
         idx__Ne__ = 13,
         idx__Gt__ = 14,
-        idx__Ge__ = 15
-    };  
+        idx__Ge__ = 15,
+        idx__Contains__ = 16,
+        idx__NotContains__ = 17
+    };
 
     /*
      * Virtual functions to be implemented by subclasses.
@@ -65,6 +67,8 @@ public:
     virtual Object *__Ne__(Object *idx);
     virtual Object *__Gt__(Object *idx);
     virtual Object *__Ge__(Object *idx);
+    virtual Object *__Contains__(Object *idx);
+    virtual Object *__NotContains__(Object *idx);
 
     /** Provide a string representation of the object. */
     virtual const std::string Repr() = 0;

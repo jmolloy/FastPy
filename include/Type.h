@@ -14,6 +14,10 @@ public:
     
     virtual const std::string Repr();
 
+    Object *GetExample() {
+        return m_example;
+    }
+
 private:
     /** Stringified representation of this type, for comparison and printing. */
     std::string m_name;

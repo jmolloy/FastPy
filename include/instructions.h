@@ -120,6 +120,8 @@ public:
     }
 
     int m_n;
+
+    virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
 };
 class BeginCatch_GetType : public Instruction {
 public:

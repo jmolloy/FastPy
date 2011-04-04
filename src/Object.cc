@@ -114,3 +114,10 @@ Object *Object::__Ge__(Object *idx) {
 
     return (Object*) ((n >= 0) ? Constant::GetBool(true) : Constant::GetBool(false));
 }
+Object *Object::__Contains__(Object *idx) {
+    /* No default for __contains__ - as per python documentation default back to using __iter__ */
+    throw new NotImplementedError("Default __contains__ not implemented");
+}
+Object *Object::__NotContains__(Object *idx) {
+    return (Object*) ((__Contains__(idx) == Constant::GetBool(false)) ? Constant::GetBool(true) : Constant::GetBool(false));
+}

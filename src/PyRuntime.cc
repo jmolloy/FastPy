@@ -16,7 +16,7 @@
 
 #include <jit/jit.h>
 
-static int print_function_name(void *fn);
+static int print_function_name(void *fn, bool &is_ctor);
 
 void *FPyRuntime_CheckCall(Object *obj) {
     if(obj == NULL) {
@@ -59,16 +59,17 @@ Object *FPyRuntime_PrintNewline() {
 Object *FPyRuntime_CallC_LJ(void *fn, Object *self, Object *p1, Object *p2, Object *p3, Object *p4, Object *p5) {
 #if defined(TRACE_C_CALLS)
     int num_args;
+    bool is_ctor = false;
     if(db_print(0, DB_PRINT_C_CALLS)) {
         printf("*** ");
-        num_args = print_function_name(fn);
+        num_args = print_function_name(fn, is_ctor);
         printf("(");
-        if(num_args > 0) printf("%.20s, ", self->Repr().c_str());
-        if(num_args > 1) printf("%.20s, ", p1->Repr().c_str());
-        if(num_args > 2) printf("%.20s, ", p2->Repr().c_str());
-        if(num_args > 3) printf("%.20s, ", p3->Repr().c_str());
-        if(num_args > 4) printf("%.20s, ", p4->Repr().c_str());
-        if(num_args > 5) printf("%.20s, ", p5->Repr().c_str());
+        if(num_args > 0 && (uintptr_t)self > 10000) printf("%.20s, ", self->Repr().c_str());
+        if(num_args > 1 && (uintptr_t)p1 > 10000) printf("%.20s, ", p1->Repr().c_str());
+        if(num_args > 2 && (uintptr_t)p2 > 10000) printf("%.20s, ", p2->Repr().c_str());
+        if(num_args > 3 && (uintptr_t)p3 > 10000) printf("%.20s, ", p3->Repr().c_str());
+        if(num_args > 4 && (uintptr_t)p4 > 10000) printf("%.20s, ", p4->Repr().c_str());
+        if(num_args > 5 && (uintptr_t)p5 > 10000) printf("%.20s, ", p5->Repr().c_str());
 
         if(num_args == -1) printf("%p, %p, %p, %p, %p, %p", self, p1, p2, p3, p4,p5);
         printf(")\n");
@@ -80,13 +81,13 @@ Object *FPyRuntime_CallC_LJ(void *fn, Object *self, Object *p1, Object *p2, Obje
 
         Object *r = _fn(self, p1, p2, p3, p4, p5);
 #if defined(TRACE_C_CALLS)
-    if(db_print(0, DB_PRINT_C_CALLS)) {
-        if(num_args == -1) {
-            fprintf(stdout, "***  -> %p\n", r);
-        } else {
-            fprintf(stdout, "***  -> %.20s\n", r->Repr().c_str());
+        if(db_print(0, DB_PRINT_C_CALLS)) {
+            // if(num_args == -1 || is_ctor) {
+            //     fprintf(stdout, "***  -> %p\n", r);
+            // } else {
+            //     fprintf(stdout, "***  -> %.20s\n", r->Repr().c_str());
+            // }
         }
-    }
 #endif
         return r;
     } catch(Exception *e) {
@@ -97,9 +98,10 @@ Object *FPyRuntime_CallC_LJ(void *fn, Object *self, Object *p1, Object *p2, Obje
 Object *FPyRuntime_CallC_LLVM(void *fn, Object *self, Object *p1, Object *p2, Object *p3, Object *p4, Object *p5) {
 #if defined(TRACE_C_CALLS)
     int num_args;
+    bool is_ctor = false;
     if(db_print(0, DB_PRINT_C_CALLS)) {
         printf("*** ");
-        num_args = print_function_name(fn);
+        num_args = print_function_name(fn, is_ctor);
         printf("(");
         if(num_args > 0) printf("%.20s, ", self->Repr().c_str());
         if(num_args > 1) printf("%.20s, ", p1->Repr().c_str());
@@ -118,7 +120,7 @@ Object *FPyRuntime_CallC_LLVM(void *fn, Object *self, Object *p1, Object *p2, Ob
         Object *r = _fn(self, p1, p2, p3, p4, p5);
 #if defined(TRACE_C_CALLS)
     if(db_print(0, DB_PRINT_C_CALLS)) {
-        if(num_args == -1) {
+        if(num_args == -1 || is_ctor) {
             fprintf(stdout, "***  -> %p\n", r);
         } else {
             fprintf(stdout, "***  -> %.20s\n", r->Repr().c_str());
@@ -141,6 +143,52 @@ Object *FPyRuntime_CallC_LLVM4(void *fn, Object *self, Object *p1, Object *p2, O
     return FPyRuntime_CallC_LLVM(fn, self, p1, p2, p3, p4, p5);
 }
 
+static bool _ExceptionCompare(Object *obj, Object *obj2) {
+    if(dynamic_cast<Tuple*>(obj)) {
+        Tuple *t = dynamic_cast<Tuple*>(obj);
+        for(int i = 0; i < t->Length(); i++) {
+            if(_ExceptionCompare(t->Get(i), obj2)) {
+                return true;
+            }
+        }
+    } else {
+        /* Massive abuse of the dynamic cast system - this function
+           is designed for use only by the runtime and is G++
+           specific. */
+        
+        Type *t = dynamic_cast<Type*>(obj);
+        assert(t);
+        Object *example = t->GetExample();
+
+        void *ptr = (void*)obj2;
+        bool b = typeid(*obj2).__do_upcast(dynamic_cast<const abi::__class_type_info*>(&typeid(*example)),
+                                           &ptr);
+        return b;
+    }
+    return false;
+}
+
+Object *FPyRuntime_ExceptionCompare(Object *obj, Object *obj2) {
+
+#if defined(TRACE_C_CALLS)
+    if(db_print(0, DB_PRINT_C_CALLS)) {
+        printf("*** ExceptionCompare(");
+        printf("%.30s, %.30s)\n", obj->Repr().c_str(), obj2->Repr().c_str());
+    }
+#endif
+    /* Return true if obj2 is a subclass of anything, recursively, in
+       obj. */
+    bool b = _ExceptionCompare(obj, obj2);
+
+    Object *ret = (Object*)Constant::GetBool(b);
+#if defined(TRACE_C_CALLS)
+    if(db_print(0, DB_PRINT_C_CALLS)) {
+        printf("***    -> %.32s\n", ret->Repr().c_str());
+    }
+#endif  
+    return ret;
+}
+
 void PopulateDictWithBuiltins(Dict *dict) {
     dict->Set(Constant::GetString("print"), new BuiltinFunction((void*)&FPyRuntime_Print));
     dict->Set(Constant::GetString("int"), Type::For(Constant::GetInt(0)));
@@ -153,7 +201,7 @@ void PopulateDictWithBuiltins(Dict *dict) {
     dict->Set(Constant::GetString("TypeError"), Type::For(new TypeError("")));
 }
 
-static int print_function_name(void *fn) {
+static int print_function_name(void *fn, bool &is_ctor) {
 
     char **syms = backtrace_symbols(&fn, 1);
     char *sym = syms[0];
@@ -188,9 +236,24 @@ static int print_function_name(void *fn) {
         } else {
             int n_args = 1;
             int is_member = 0;
+            char *containing_class = 0;
+            int fnname_start = 0;
+            char *fnname = 0;
             for(int i = 0; i < strlen(realname); i++) {
                 if(realname[i] == ':') {
                     is_member = 1;
+                    if(containing_class == 0) {
+                        realname[i] = 0;
+                        containing_class = strdup(realname);
+                        realname[i] = ':';
+                    } else {
+                        fnname_start = i+1;
+                    }
+                }
+                if(realname[i] == '(') {
+                    realname[i] = 0;
+                    fnname = strdup(&realname[fnname_start]);
+                    realname[i] = '(';
                 }
                 if(realname[i] == ',') {
                     ++n_args;
@@ -200,6 +263,16 @@ static int print_function_name(void *fn) {
                     break;
                 }
             }
+
+            if(fnname && containing_class &&
+               strcmp(fnname, containing_class) == 0) {
+                /* Constructor - don't look in any members because they
+                   may not be initialised */
+                is_member = 0;
+                n_args = 0;
+                is_ctor = true;
+            }
+
             for(int i = 0; i < strlen(realname); i++) {
                 if(realname[i] == '(') {
                     realname[i] = '\0';
