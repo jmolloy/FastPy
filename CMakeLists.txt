@@ -25,6 +25,7 @@ set(SRCS
   src/Exception.cc
   src/Traceback.cc
   src/db.cc
+  src/demangle.cc
 )
 
 find_library(LIBJIT jit)

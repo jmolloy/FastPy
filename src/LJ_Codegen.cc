@@ -296,7 +296,7 @@ jit_value_t ReRaise::_LJ_Codegen(jit_function_t func, Function *f) {
 /* Tuple::Tuple(int) */
 extern void *_ZN5TupleC1Ei;
 /* Tuple::Set(long, Value*) */
-extern void *_ZN5Tuple3SetElP5Value;
+extern void *_ZN5Tuple3SetElP6Object;
 
 jit_value_t BuildTuple::_LJ_Codegen(jit_function_t func, Function *f) {
     jit_insn_mark_offset(func, m_bytecode_offset);
@@ -305,7 +305,7 @@ jit_value_t BuildTuple::_LJ_Codegen(jit_function_t func, Function *f) {
     jit_value_t v = _LJ_AllocMemory(this, func, sizeof(Tuple));
     _LJ_Call(func, "_ZN5TupleC1Ei", (void*)&_ZN5TupleC1Ei, v, jit_value_create_nint_constant(func, jit_type_nuint, (jit_nuint)m_n));
     for(int i = 0; i < m_n; i++) {
-        _LJ_Call(func, "_ZN5Tuple3SetElP5Value", (void*)&_ZN5Tuple3SetElP5Value, v, jit_value_create_nint_constant(func, jit_type_nuint, (jit_nuint)i), m_args[i]->LJ_Codegen(func, f));
+        _LJ_Call(func, "_ZN5Tuple3SetElP6Object", (void*)&_ZN5Tuple3SetElP6Object, v, jit_value_create_nint_constant(func, jit_type_nuint, (jit_nuint)i), m_args[i]->LJ_Codegen(func, f));
     }
     return v;
 }

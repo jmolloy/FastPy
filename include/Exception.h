@@ -32,7 +32,8 @@ public:
     }
 
     virtual const std::string Repr();
-
+    virtual Object *__Repr__();
+    
 protected:
     std::string m_name;
     std::string m_desc;

@@ -13,16 +13,16 @@ Object *Object::__Hash__() {
 }
 
 Object *Object::__Repr__() {
+    return (Object*)Constant::GetString(Repr());
+}
+
+Object *Object::__Str__() {
     std::stringstream ss;
     ss << "<";
     ss << typeid(*this).name() << " instance @ ";
     ss << std::hex << this << std::dec << ">";
 
     return (Object*)Constant::GetString(ss.str());
-}
-
-Object *Object::__Str__() {
-    return __Repr__();
 }
 
 Object *Object::__Cmp__(Object *other) {

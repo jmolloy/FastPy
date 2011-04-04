@@ -45,7 +45,7 @@ const std::string Tuple::Repr() {
     std::stringstream ss;
     bool first = true;
     ss << "(";
-    for(std::vector<Value*>::iterator it = m_l.begin();
+    for(std::vector<Object*>::iterator it = m_l.begin();
         it != m_l.end();
         it++) {
         if(*it == 0) {

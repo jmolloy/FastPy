@@ -48,17 +48,17 @@ public:
         return t;
     }
 
-    void Set(long i, Value *v) {
+    void Set(long i, Object *v) {
         m_l[i] = v;
     }
-    Value *Get(int idx) {
+    Object *Get(int idx) {
         return m_l[idx];
     }
     int Length() {
         return m_l.size();
     }
 private:
-    std::vector<Value*> m_l;
+    std::vector<Object*> m_l;
 };
 
 class Dict : public Variable {

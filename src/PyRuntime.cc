@@ -11,12 +11,13 @@
 #include <string.h>
 #include <execinfo.h>
 #include <cxxabi.h>
+#include <demangle.h>
 
 #include <db.h>
 
 #include <jit/jit.h>
 
-static int print_function_name(void *fn, bool &is_ctor);
+static char *get_function_name(void *fn);
 
 void *FPyRuntime_CheckCall(Object *obj) {
     if(obj == NULL) {
@@ -45,7 +46,9 @@ Object *FPyRuntime_Print(Object *obj) {
 }
 Object *FPyRuntime_PrintItem(Object *obj) {
     if(dynamic_cast<ConstantString*>(obj) != 0) {
-        printf("'%s'", dynamic_cast<ConstantString*>(obj)->str().c_str());
+        printf("%s", dynamic_cast<ConstantString*>(obj)->str().c_str());
+    } else if(dynamic_cast<ConstantString*>(obj->__Repr__()) != 0) {
+        printf("%s", dynamic_cast<ConstantString*>(obj->__Repr__())->str().c_str());
     } else {
         printf("%s", obj->Repr().c_str() );
     }
@@ -58,21 +61,38 @@ Object *FPyRuntime_PrintNewline() {
 
 Object *FPyRuntime_CallC_LJ(void *fn, Object *self, Object *p1, Object *p2, Object *p3, Object *p4, Object *p5) {
 #if defined(TRACE_C_CALLS)
-    int num_args;
-    bool is_ctor = false;
     if(db_print(0, DB_PRINT_C_CALLS)) {
-        printf("*** ");
-        num_args = print_function_name(fn, is_ctor);
-        printf("(");
-        if(num_args > 0 && (uintptr_t)self > 10000) printf("%.20s, ", self->Repr().c_str());
-        if(num_args > 1 && (uintptr_t)p1 > 10000) printf("%.20s, ", p1->Repr().c_str());
-        if(num_args > 2 && (uintptr_t)p2 > 10000) printf("%.20s, ", p2->Repr().c_str());
-        if(num_args > 3 && (uintptr_t)p3 > 10000) printf("%.20s, ", p3->Repr().c_str());
-        if(num_args > 4 && (uintptr_t)p4 > 10000) printf("%.20s, ", p4->Repr().c_str());
-        if(num_args > 5 && (uintptr_t)p5 > 10000) printf("%.20s, ", p5->Repr().c_str());
+        char *symn = get_function_name(fn);
 
-        if(num_args == -1) printf("%p, %p, %p, %p, %p, %p", self, p1, p2, p3, p4,p5);
-        printf(")\n");
+        printf("*** ");
+        symbol_t *sym = (symbol_t*)malloc(sizeof(symbol_t));
+        memset(sym, 0, sizeof(symbol_t));
+
+        demangle(LargeStaticString(symn), sym);
+        if(sym->is_ctor) {
+            printf("%s(<ctor>)\n", (const char*)sym->name);
+        } else {
+            Object *objs[] = {p1,p2,p3,p4,p5};
+
+            bool is_member = sym->name.contains("::") && !sym->is_ctor;
+            printf("%s(", (const char*)sym->name);
+            if(is_member) {
+                printf("%.32s", self->Repr().c_str());
+            }
+            for(int i = 0; i < sym->nParams; i++) {
+                if(i > 0 || is_member) {
+                    printf(", ");
+                }
+
+                if(sym->params[i] == "Object*") {
+                    printf("%.32s", objs[i]->Repr().c_str());
+                } else {
+                    printf("%p", objs[i]);
+                }
+            }
+            printf(")\n");
+        }
+        free(sym);
     }
 #endif
     try {
@@ -100,18 +120,6 @@ Object *FPyRuntime_CallC_LLVM(void *fn, Object *self, Object *p1, Object *p2, Ob
     int num_args;
     bool is_ctor = false;
     if(db_print(0, DB_PRINT_C_CALLS)) {
-        printf("*** ");
-        num_args = print_function_name(fn, is_ctor);
-        printf("(");
-        if(num_args > 0) printf("%.20s, ", self->Repr().c_str());
-        if(num_args > 1) printf("%.20s, ", p1->Repr().c_str());
-        if(num_args > 2) printf("%.20s, ", p2->Repr().c_str());
-        if(num_args > 3) printf("%.20s, ", p3->Repr().c_str());
-        if(num_args > 4) printf("%.20s, ", p4->Repr().c_str());
-        if(num_args > 5) printf("%.20s, ", p5->Repr().c_str());
-
-        if(num_args == -1) printf("%p, %p, %p, %p, %p, %p", self, p1, p2, p3, p4,p5);
-        printf(")\n");
     }
 #endif
         typedef Object *(*FnTy)(Object*,Object*,Object*,Object*,Object*,Object*);
@@ -201,7 +209,7 @@ void PopulateDictWithBuiltins(Dict *dict) {
     dict->Set(Constant::GetString("TypeError"), Type::For(new TypeError("")));
 }
 
-static int print_function_name(void *fn, bool &is_ctor) {
+static char *get_function_name(void *fn) {
 
     char **syms = backtrace_symbols(&fn, 1);
     char *sym = syms[0];
@@ -224,66 +232,7 @@ static int print_function_name(void *fn, bool &is_ctor) {
         }
     }
 
-    if(idx >= strlen(sym)) {
-        fprintf(stdout, "%s", sym);
-        return -1;
-    } else {
-        int status = -1;
-        char *realname = abi::__cxa_demangle(&sym[idx], NULL, 0, &status);
-        if(status != 0) {
-            fprintf(stdout, "%s", &sym[idx]);
-            return -1;
-        } else {
-            int n_args = 1;
-            int is_member = 0;
-            char *containing_class = 0;
-            int fnname_start = 0;
-            char *fnname = 0;
-            for(int i = 0; i < strlen(realname); i++) {
-                if(realname[i] == ':') {
-                    is_member = 1;
-                    if(containing_class == 0) {
-                        realname[i] = 0;
-                        containing_class = strdup(realname);
-                        realname[i] = ':';
-                    } else {
-                        fnname_start = i+1;
-                    }
-                }
-                if(realname[i] == '(') {
-                    realname[i] = 0;
-                    fnname = strdup(&realname[fnname_start]);
-                    realname[i] = '(';
-                }
-                if(realname[i] == ',') {
-                    ++n_args;
-                }
-                if(realname[i] == ')' && realname[i-1] == '(') {
-                    n_args = 0;
-                    break;
-                }
-            }
-
-            if(fnname && containing_class &&
-               strcmp(fnname, containing_class) == 0) {
-                /* Constructor - don't look in any members because they
-                   may not be initialised */
-                is_member = 0;
-                n_args = 0;
-                is_ctor = true;
-            }
-
-            for(int i = 0; i < strlen(realname); i++) {
-                if(realname[i] == '(') {
-                    realname[i] = '\0';
-                    break;
-                }
-            }
-
-            fprintf(stdout, "%s", realname);
-
-            free(realname);
-            return n_args+is_member;
-        }
-    }
+    char *x = strdup(&sym[idx]);
+    free(syms);
+    return x;
 }
