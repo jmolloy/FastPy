@@ -117,26 +117,56 @@ Object *FPyRuntime_CallC_LJ(void *fn, Object *self, Object *p1, Object *p2, Obje
 
 Object *FPyRuntime_CallC_LLVM(void *fn, Object *self, Object *p1, Object *p2, Object *p3, Object *p4, Object *p5) {
 #if defined(TRACE_C_CALLS)
-    int num_args;
-    bool is_ctor = false;
     if(db_print(0, DB_PRINT_C_CALLS)) {
+        char *symn = get_function_name(fn);
+
+        printf("*** ");
+        symbol_t *sym = (symbol_t*)malloc(sizeof(symbol_t));
+        memset(sym, 0, sizeof(symbol_t));
+
+        demangle(LargeStaticString(symn), sym);
+        if(sym->is_ctor) {
+            printf("%s(<ctor>)\n", (const char*)sym->name);
+        } else {
+            Object *objs[] = {p1,p2,p3,p4,p5};
+
+            bool is_member = sym->name.contains("::") && !sym->is_ctor;
+            printf("%s(", (const char*)sym->name);
+            if(is_member) {
+                printf("%.32s", self->Repr().c_str());
+            }
+            for(int i = 0; i < sym->nParams; i++) {
+                if(i > 0 || is_member) {
+                    printf(", ");
+                }
+
+                if(sym->params[i] == "Object*") {
+                    printf("%.32s", objs[i]->Repr().c_str());
+                } else {
+                    printf("%p", objs[i]);
+                }
+            }
+            printf(")\n");
+        }
+        free(sym);
     }
 #endif
-        typedef Object *(*FnTy)(Object*,Object*,Object*,Object*,Object*,Object*);
-        FnTy _fn = (FnTy)fn;
+    typedef Object *(*FnTy)(Object*,Object*,Object*,Object*,Object*,Object*);
+    FnTy _fn = (FnTy)fn;
 
-        Object *r = _fn(self, p1, p2, p3, p4, p5);
+    Object *r = _fn(self, p1, p2, p3, p4, p5);
 #if defined(TRACE_C_CALLS)
     if(db_print(0, DB_PRINT_C_CALLS)) {
-        if(num_args == -1 || is_ctor) {
-            fprintf(stdout, "***  -> %p\n", r);
-        } else {
-            fprintf(stdout, "***  -> %.20s\n", r->Repr().c_str());
-        }
+        // if(num_args == -1 || is_ctor) {
+        //     fprintf(stdout, "***  -> %p\n", r);
+        // } else {
+        //     fprintf(stdout, "***  -> %.20s\n", r->Repr().c_str());
+        // }
     }
 #endif
-        return r;
+    return r;
 }
+
 
 Object *FPyRuntime_CallC_LLVM1(void *fn, Object *self, Object *p1, Object *p2, Object *p3, Object *p4, Object *p5) {
     return FPyRuntime_CallC_LLVM(fn, self, p1, p2, p3, p4, p5);

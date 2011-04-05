@@ -122,6 +122,9 @@ public:
     int m_n;
 
     virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
+#if defined(WITH_LLVM)
+    virtual llvm::Value *_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, Function *f);
+#endif
 };
 class BeginCatch_GetType : public Instruction {
 public:
@@ -130,6 +133,9 @@ public:
     }
 
     virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
+#if defined(WITH_LLVM)
+    virtual llvm::Value *_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, Function *f);
+#endif
 };
 class BeginCatch_GetValue : public Instruction {
 public:
@@ -149,6 +155,9 @@ public:
     }
 
     virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
+#if defined(WITH_LLVM)
+    virtual llvm::Value *_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, Function *f);
+#endif
 };
 class Compare : public Instruction {
 public:
@@ -199,6 +208,9 @@ public:
     }
 
     virtual jit_value_t _LJ_Codegen(jit_function_t func, Function *f);
+#if defined(WITH_LLVM)
+    virtual llvm::Value *_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, Function *f);
+#endif
 };
 class Phi : public Instruction {
 public:

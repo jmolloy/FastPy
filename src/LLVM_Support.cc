@@ -55,6 +55,7 @@ llvm::Type *g_object_ty;
 const llvm::Type *g_u8_ptr_ty, *g_nint_ty;
 llvm::Function *g_fn_callc0, *g_fn_callc1, *g_fn_callc2, *g_fn_callc3, *g_fn_callc4, *g_fn_callc5;
 llvm::Value *g_llvm_eh_exception, *g_llvm_eh_selector, *g_personality;
+llvm::Value *g_cxa_begin_catch, *g_cxa_end_catch, *g_unwind_resume_or_rethrow;
 
 static llvm::FunctionType * _LLVM_fn_signature(int nargs) {
     /* Account for the extra argument - must call FPyRuntime_CallC with it! */
@@ -149,8 +150,24 @@ llvm::Module *LLVM_Initialize() {
     llvm::FunctionType *fn_type = llvm::FunctionType::get(g_u8_ptr_ty, args, true);
     assert(fn_type);
 
+    llvm::FunctionType *fn_type3 = llvm::FunctionType::get(llvm::Type::getVoidTy(context), args, true);
+    assert(fn_type3);
+
+    args.push_back(g_u8_ptr_ty);
+    llvm::FunctionType *fn_type2 = llvm::FunctionType::get(g_u8_ptr_ty, args, true);
+    assert(fn_type2);
+
     g_personality = llvm::Function::Create(fn_type, llvm::Function::ExternalLinkage, "__gxx_personality_v0", m);
     assert(g_personality);
+
+    g_cxa_begin_catch = llvm::Function::Create(fn_type2, llvm::Function::ExternalLinkage, "__cxa_begin_catch", m);
+    assert(g_cxa_begin_catch);
+
+    g_cxa_end_catch = llvm::Function::Create(fn_type3, llvm::Function::ExternalLinkage, "__cxa_end_catch", m);
+    assert(g_cxa_end_catch);
+
+    g_unwind_resume_or_rethrow = llvm::Function::Create(fn_type2, llvm::Function::ExternalLinkage, "_Unwind_Resume_or_Rethrow", m);
+    assert(g_unwind_resume_or_rethrow);
 
     const llvm::Type *int32ty = llvm::Type::getInt32Ty(context);
 

@@ -63,6 +63,14 @@ public:
     void LJ_SetExceptionObject(jit_value_t exc) {
         m_lj_exception_object = exc;
     }
+#if defined(WITH_LLVM)
+    llvm::Value *LLVM_GetExceptionObject() {
+        return m_llvm_exception_object;
+    }
+    void LLVM_SetExceptionObject(llvm::Value *exc) {
+        m_llvm_exception_object = exc;
+    }
+#endif
 
 private:
     /** Entry block */
@@ -93,6 +101,7 @@ private:
 
 #if defined(WITH_LLVM)
     llvm::Function *m_llvm_function;
+    llvm::Value *m_llvm_exception_object;
 #endif
 };
 
