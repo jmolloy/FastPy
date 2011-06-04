@@ -57,21 +57,6 @@ public:
 
     virtual void *GetFnPtr();
 
-    jit_value_t LJ_GetExceptionObject() {
-        return m_lj_exception_object;
-    }
-    void LJ_SetExceptionObject(jit_value_t exc) {
-        m_lj_exception_object = exc;
-    }
-#if defined(WITH_LLVM)
-    llvm::Value *LLVM_GetExceptionObject() {
-        return m_llvm_exception_object;
-    }
-    void LLVM_SetExceptionObject(llvm::Value *exc) {
-        m_llvm_exception_object = exc;
-    }
-#endif
-
 private:
     /** Entry block */
     BasicBlock *m_entry_block;
@@ -92,8 +77,6 @@ private:
 
     jit_function_t m_jit_function;
 
-    jit_value_t m_lj_exception_object;
-
     /** Almost an iterator - the current block being codegenned.
 
         This is only valid during LJ_Codegen time. */
@@ -101,7 +84,6 @@ private:
 
 #if defined(WITH_LLVM)
     llvm::Function *m_llvm_function;
-    llvm::Value *m_llvm_exception_object;
 #endif
 };
 

@@ -23,8 +23,11 @@ BasicBlock::BasicBlock(Function *parent) :
     m_num_successors(0), m_stack(new OperandStack()), m_fn(parent),
     m_jit_label(jit_label_undefined),
     m_jit_end_label(jit_label_undefined),
+    m_lj_exception_object(NULL),
 #if defined(WITH_LLVM)
     m_llvm_block(0),
+    m_llvm_block_for_reraise(0),
+    m_llvm_exception_object(0),
 #endif
     m_unwind_block(NULL)
 {
@@ -394,7 +397,9 @@ void BasicBlock::LLVM_Codegen(llvm::Module *m) {
         ++it) {
         (*it)->LLVM_Codegen(b, func, m_fn);
     }
-    if(m_num_successors == 1) {
+
+    // Must use GetInsertBlock here as codegen may have created another block.
+    if(m_num_successors == 1 && !b.GetInsertBlock()->getTerminator()) {
         b.CreateBr(GetSuccessor(0)->LLVM_GetBlock(func));
     }
 }

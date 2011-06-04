@@ -49,7 +49,7 @@ static llvm::Value *_LLVM_Call(llvm::IRBuilder<> &b, llvm::Function *func, const
     return v;
 }
 static llvm::Value *_LLVM_Call(llvm::IRBuilder<> &b, llvm::Function *func, const char *name, void *fp, llvm::Value *arg0) {
-    llvm::Value *v = b.CreateCall2(g_fn_callc0,
+    llvm::Value *v = b.CreateCall2(g_fn_callc1,
                                   _LLVM_GetVoidPtr(b, fp),
                                   arg0,
                                   name);
@@ -57,7 +57,7 @@ static llvm::Value *_LLVM_Call(llvm::IRBuilder<> &b, llvm::Function *func, const
     return v;
 }
 static llvm::Value *_LLVM_Call(llvm::IRBuilder<> &b, llvm::Function *func, const char *name, void *fp, llvm::Value *arg0, llvm::Value *arg1) {
-    llvm::Value *v = b.CreateCall3(g_fn_callc0,
+    llvm::Value *v = b.CreateCall3(g_fn_callc2,
                                   _LLVM_GetVoidPtr(b, fp),
                                   arg0,
                                   arg1,
@@ -66,7 +66,7 @@ static llvm::Value *_LLVM_Call(llvm::IRBuilder<> &b, llvm::Function *func, const
     return v;
 }
 static llvm::Value *_LLVM_Call(llvm::IRBuilder<> &b, llvm::Function *func, const char *name, void *fp, llvm::Value *arg0, llvm::Value *arg1, llvm::Value *arg2) {
-    llvm::Value *v = b.CreateCall4(g_fn_callc0,
+    llvm::Value *v = b.CreateCall4(g_fn_callc3,
                                   _LLVM_GetVoidPtr(b, fp),
                                   arg0,
                                   arg1,
@@ -102,7 +102,7 @@ static llvm::Value *_LLVM_CallVtable(llvm::IRBuilder<> &b, llvm::Function *func,
 
     /* Call that bad boy. */
     llvm::Value *call = b.CreateCall2(g_fn_callc0,
-                                      b.CreateBitCast(ptr, g_object_ty),
+                                      ptr,
                                       obj);
     assert(call);
     return call;
@@ -123,7 +123,7 @@ static llvm::Value *_LLVM_CallVtable(llvm::IRBuilder<> &b, llvm::Function *func,
     BasicBlock *blk = f->LJ_GetCurrentBlock();
 
     std::vector<llvm::Value*> args;
-    args.push_back(b.CreateBitCast(ptr, g_object_ty));
+    args.push_back(ptr);
     args.push_back(obj);
     args.push_back(arg0);
 
@@ -156,7 +156,7 @@ static llvm::Value *_LLVM_CallVtable(llvm::IRBuilder<> &b, llvm::Function *func,
     BasicBlock *blk = f->LJ_GetCurrentBlock();
 
     std::vector<llvm::Value*> args;
-    args.push_back(b.CreateBitCast(ptr, g_object_ty));
+    args.push_back(ptr);
     args.push_back(obj);
     args.push_back(arg0);
     args.push_back(arg1);
@@ -165,10 +165,10 @@ static llvm::Value *_LLVM_CallVtable(llvm::IRBuilder<> &b, llvm::Function *func,
     llvm::Value *call;
 
     if(blk->GetUnwindBlock() == 0) {
-        call = b.CreateCall(g_fn_callc2, args.begin(), args.end());
+        call = b.CreateCall(g_fn_callc3, args.begin(), args.end());
     } else {
         llvm::BasicBlock *normal_blk = llvm::BasicBlock::Create(func->getContext(), "hot-callreturn", func);
-        call = b.CreateInvoke(g_fn_callc2, normal_blk, blk->GetUnwindBlock()->LLVM_GetBlock(func), args.begin(), args.end());
+        call = b.CreateInvoke(g_fn_callc3, normal_blk, blk->GetUnwindBlock()->LLVM_GetBlock(func), args.begin(), args.end());
         b.SetInsertPoint(normal_blk);
     }
     assert(call);
@@ -176,7 +176,8 @@ static llvm::Value *_LLVM_CallVtable(llvm::IRBuilder<> &b, llvm::Function *func,
 }
 
 static llvm::Value *_LLVM_AllocMemory(Instruction *i, llvm::IRBuilder<> &b, llvm::Function *f, size_t sz) {
-    return _LLVM_Call(b, f, "malloc", (void*)&malloc, llvm::ConstantInt::get(g_nint_ty, sz));
+    return _LLVM_Call(b, f, "malloc", (void*)&malloc,
+                      _LLVM_GetObjPtr(b, (void*)sz));
 }
 
 
@@ -256,7 +257,7 @@ llvm::Value *Compare::_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, 
             llvm::Value *i = _LLVM_Call(b, func, "FPyRuntime_ExceptionCompare", (void*)&FPyRuntime_ExceptionCompare, 
                                         m_args[0]->LLVM_Codegen(b, func, f),
                                         m_args[1]->LLVM_Codegen(b, func, f));
-
+            assert(i);
             _LLVM_SetLine(i, f, m_bytecode_offset);
             return i;
         }
@@ -278,7 +279,6 @@ llvm::Value *TestIfFalse::_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *fu
 //    jit_insn_mark_offset(func, m_bytecode_offset);
 
     BasicBlock *blk = f->LJ_GetCurrentBlock();
-
     llvm::Value *eq_test = b.CreateICmpEQ(m_args[0]->LLVM_Codegen(b, func, f),
                                           Constant::GetBool(false)->LLVM_Codegen(b, func, f), "false_test");
     assert(eq_test);
@@ -316,43 +316,61 @@ llvm::Value *PrintNewline::_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *f
     return _LLVM_Call(b, func, "FPyRuntime_PrintNewline", (void*)&FPyRuntime_PrintNewline);
 }
 
-llvm::Value *BeginCatch_GetValue::_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, Function *f) {
-
-    llvm::Value *eh_ptr = f->LLVM_GetExceptionObject();
-    if(eh_ptr == 0) {
-        llvm::Value *eh = b.CreateCall(g_llvm_eh_exception, "eh");
-
-        llvm::Value *eh_select = b.CreateCall3(g_llvm_eh_selector,
-                                               eh,
-                                               b.CreateBitCast(g_personality, g_u8_ptr_ty),
-                                               llvm::Constant::getNullValue(g_u8_ptr_ty));
-        _LLVM_SetLine(eh_select, f, m_bytecode_offset);
-
-        eh_ptr = b.CreateCall(g_cxa_begin_catch, eh);
-        eh_ptr = b.CreateBitCast(eh_ptr, g_object_ty->getPointerTo());
-        eh_ptr = b.CreateLoad(eh_ptr);
-
-        f->LLVM_SetExceptionObject(eh_ptr);
-    }
-    return eh_ptr;
-}
-
-llvm::Value *BeginCatch_GetType::_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, Function *f) {
-    llvm::Value *eh_ptr = f->LLVM_GetExceptionObject();
-    if(eh_ptr == 0) {
+llvm::Value *_LLVM_CreateExceptionObject(llvm::IRBuilder<> &b, llvm::Function *func, Function *f, int bc_offset) {
         llvm::Value *eh = b.CreateCall(g_llvm_eh_exception, "eh_ptr");
 
         llvm::Value *eh_select = b.CreateCall3(g_llvm_eh_selector,
                                                eh,
                                                b.CreateBitCast(g_personality, g_u8_ptr_ty),
                                                llvm::Constant::getNullValue(g_u8_ptr_ty));
-        _LLVM_SetLine(eh_select, f, m_bytecode_offset);
+        _LLVM_SetLine(eh_select, f, bc_offset);
 
-        eh_ptr = b.CreateCall(g_cxa_begin_catch, eh);
+        llvm::Value *eh_ptr = b.CreateCall(g_cxa_begin_catch, eh);
         eh_ptr = b.CreateBitCast(eh_ptr, g_object_ty->getPointerTo());
         eh_ptr = b.CreateLoad(eh_ptr);
 
-        f->LLVM_SetExceptionObject(eh_ptr);
+        f->LJ_GetCurrentBlock()->LLVM_SetExceptionObject(eh_ptr);
+
+        llvm::BasicBlock *oldblk = b.GetInsertBlock();
+
+        llvm::BasicBlock *blk = NULL;
+        if (f->LJ_GetCurrentBlock()->LLVM_GetBlockForReRaise() == NULL) {
+            blk = llvm::BasicBlock::Create(func->getContext(), "ppad", func);
+        } else {
+            blk = f->LJ_GetCurrentBlock()->LLVM_GetBlockForReRaise();
+        }
+        b.CreateBr(blk);
+
+        b.SetInsertPoint(blk);
+
+        // Block should start with a PHI instruction to marshal exception objects for reraises.
+        // if (blk->empty()) {
+        //     b.CreatePHI(eh_ptr->getType());
+        // }
+
+        // assert(!blk->empty());
+        // llvm::PHINode *phi_insn = llvm::cast<llvm::PHINode>(&blk->front());
+        // phi_insn->addIncoming(oldblk, eh_ptr);
+
+        f->LJ_GetCurrentBlock()->LLVM_SetBlockForReRaise(blk);
+
+        // return phi_insn;
+        return eh_ptr;
+}
+
+llvm::Value *BeginCatch_GetValue::_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, Function *f) {
+
+    llvm::Value *eh_ptr = f->LJ_GetCurrentBlock()->LLVM_GetExceptionObject();
+    if(eh_ptr == 0) {
+        eh_ptr = _LLVM_CreateExceptionObject(b, func, f, m_bytecode_offset);
+    }
+    return eh_ptr;
+}
+
+llvm::Value *BeginCatch_GetType::_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, Function *f) {
+    llvm::Value *eh_ptr = f->LJ_GetCurrentBlock()->LLVM_GetExceptionObject();
+    if(eh_ptr == 0) {
+        eh_ptr = _LLVM_CreateExceptionObject(b, func, f, m_bytecode_offset);
     }
 
     /**@todo Type objects */
@@ -362,21 +380,9 @@ llvm::Value *BeginCatch_GetType::_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Funct
 
 llvm::Value *BeginCatch_GetTraceback::_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, Function *f) {
 
-    llvm::Value *eh_ptr = f->LLVM_GetExceptionObject();
+    llvm::Value *eh_ptr = f->LJ_GetCurrentBlock()->LLVM_GetExceptionObject();
     if(eh_ptr == 0) {
-        llvm::Value *eh = b.CreateCall(g_llvm_eh_exception, "eh_ptr");
-
-        llvm::Value *eh_select = b.CreateCall3(g_llvm_eh_selector,
-                                               eh,
-                                               b.CreateBitCast(g_personality, g_u8_ptr_ty),
-                                               llvm::Constant::getNullValue(g_u8_ptr_ty));
-        _LLVM_SetLine(eh_select, f, m_bytecode_offset);
-
-        eh_ptr = b.CreateCall(g_cxa_begin_catch, eh);
-        eh_ptr = b.CreateBitCast(eh_ptr, g_object_ty->getPointerTo());
-        eh_ptr = b.CreateLoad(eh_ptr);
-
-        f->LLVM_SetExceptionObject(eh_ptr);
+        eh_ptr = _LLVM_CreateExceptionObject(b, func, f, m_bytecode_offset);
     }
 
     int off = offsetof(Exception, m_traceback);
@@ -387,12 +393,35 @@ llvm::Value *BeginCatch_GetTraceback::_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::
 }
 
 llvm::Value *ReRaise::_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *func, Function *f) {
-    llvm::Value *eh_ptr = f->LLVM_GetExceptionObject();
-    assert(eh_ptr);
+    if(f->LJ_GetCurrentBlock()->GetUnwindBlock()) {
 
-    llvm::Value *c = b.CreateCall(g_unwind_resume_or_rethrow, b.CreateBitCast(eh_ptr, g_u8_ptr_ty));
-    assert(c);
-    return c;
+        llvm::BasicBlock *blk = NULL;
+        if (f->LJ_GetCurrentBlock()->GetUnwindBlock()->LLVM_GetBlockForReRaise() == NULL) {
+            blk = llvm::BasicBlock::Create(func->getContext(), "ppad", func);
+        } else {
+            blk = f->LJ_GetCurrentBlock()->GetUnwindBlock()->LLVM_GetBlockForReRaise();
+        }
+        llvm::Value *br = b.CreateBr(blk);
+
+        // b.SetInsertPoint(blk);
+
+        // // Block should start with a PHI instruction to marshal exception objects for reraises.
+        // if (blk->empty()) {
+        //     b.CreatePHI(eh_ptr->getType());
+        // }
+
+        // assert(!blk->empty());
+        // llvm::PHINode *phi_insn = llvm::cast<llvm::PHINode>(&blk->front());
+        // phi_insn->addIncoming(oldblk, eh_ptr);
+
+        f->LJ_GetCurrentBlock()->GetUnwindBlock()->LLVM_SetBlockForReRaise(blk);
+
+        return br;
+    } else {
+        llvm::Value *c = b.CreateCall(g_unwind_resume_or_rethrow, b.CreateCall(g_llvm_eh_exception, "eh_ptr"));
+        assert(c);
+        return c;
+    }
 }
 
 /* Tuple::Tuple(int) */
@@ -404,9 +433,10 @@ llvm::Value *BuildTuple::_LLVM_Codegen(llvm::IRBuilder<> &b, llvm::Function *fun
     /* Allocate the memory for the tuple - this is seperated so that escape analysis can decide where
        the memory should be allocated (heap or stack). */
     llvm::Value *v = _LLVM_AllocMemory(this, b, func, sizeof(Tuple));
-    _LLVM_Call(b, func, "_ZN5TupleC1Ei", (void*)&_ZN5TupleC1Ei, v, llvm::ConstantInt::get(g_nint_ty, m_n));
+    _LLVM_Call(b, func, "_ZN5TupleC1Ei", (void*)&_ZN5TupleC1Ei, v,
+               _LLVM_GetObjPtr(b, (void*)m_n));
     for(int i = 0; i < m_n; i++) {
-        _LLVM_Call(b, func, "_ZN5Tuple3SetElP6Object", (void*)&_ZN5Tuple3SetElP6Object, v, llvm::ConstantInt::get(g_nint_ty, i), m_args[i]->LLVM_Codegen(b, func, f));
+        _LLVM_Call(b, func, "_ZN5Tuple3SetElP6Object", (void*)&_ZN5Tuple3SetElP6Object, v,_LLVM_GetObjPtr(b, (void*)i) , m_args[i]->LLVM_Codegen(b, func, f));
     }
     return v;
 }

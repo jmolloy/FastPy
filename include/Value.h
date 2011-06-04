@@ -16,7 +16,11 @@ class Function;
 class Value : public Object {
 public:
     Value() :
-        m_jit_value(0), m_bytecode_offset(0) {
+        m_jit_value(0), 
+#if defined(WITH_LLVM)
+        m_llvm_value(0),
+#endif
+        m_bytecode_offset(0) {
     }
 
     virtual bool IsValue() {

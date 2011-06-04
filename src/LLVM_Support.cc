@@ -2,21 +2,24 @@
 
 #include <LLVM_Support.h>
 
+#include <llvm/ADT/ArrayRef.h>
 #include <llvm/ADT/Twine.h>
+#include <llvm/CodeGen/MachineFunction.h>
 #include <llvm/Constant.h>
 #include <llvm/DerivedTypes.h>
-#include <llvm/ExecutionEngine/JITEventListener.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/JIT.h>
+#include <llvm/ExecutionEngine/JITEventListener.h>
 #include <llvm/Function.h>
 #include <llvm/Intrinsics.h>
 #include <llvm/LLVMContext.h>
 #include <llvm/Module.h>
+#include <llvm/PassManager.h>
 #include <llvm/Support/IRBuilder.h>
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/Target/TargetSelect.h>
+#include <llvm/Transforms/Scalar.h>
 #include <llvm/Type.h>
-#include <llvm/CodeGen/MachineFunction.h>
 
 #include <Object.h>
 #include <Exception.h>
@@ -57,13 +60,19 @@ llvm::Function *g_fn_callc0, *g_fn_callc1, *g_fn_callc2, *g_fn_callc3, *g_fn_cal
 llvm::Value *g_llvm_eh_exception, *g_llvm_eh_selector, *g_personality;
 llvm::Value *g_cxa_begin_catch, *g_cxa_end_catch, *g_unwind_resume_or_rethrow;
 
-static llvm::FunctionType * _LLVM_fn_signature(int nargs) {
+llvm::FunctionPassManager *g_llvm_fpm;
+
+static llvm::FunctionType * _LLVM_fn_signature(int nargs, bool voidfirst=false) {
     /* Account for the extra argument - must call FPyRuntime_CallC with it! */
     nargs++;
 
     std::vector<const llvm::Type*> args;
     for(int i = 0; i < nargs; i++) {
-        args.push_back(g_object_ty);
+        if(i == 0 && voidfirst) {
+            args.push_back(g_u8_ptr_ty);
+        } else {
+            args.push_back(g_object_ty);
+        }
     }
     llvm::FunctionType *fn_type = llvm::FunctionType::get(g_object_ty, args, false);
     assert(fn_type);
@@ -71,9 +80,9 @@ static llvm::FunctionType * _LLVM_fn_signature(int nargs) {
     return fn_type;
 }
 
-
 llvm::Module *LLVM_Initialize() {
-    llvm::UnwindTablesMandatory = true;
+    // Removed during llvm update?
+    //llvm::UnwindTablesMandatory = true;
     llvm::JITExceptionHandling = true;
     llvm::JITEmitDebugInfo = true;
     llvm::NoFramePointerElim = true;
@@ -100,30 +109,30 @@ llvm::Module *LLVM_Initialize() {
 
     g_object_ty = llvm::StructType::get(m->getContext(),
                                         llvm::PointerType::getUnqual(vtable_ty),
-                                        NULL);
+                                        NULL, NULL); // Second NULL is the easiest way to disambiguate the overload. GCC being pedantic.
     g_object_ty = llvm::PointerType::getUnqual(g_object_ty);
 
-    g_fn_callc0 = llvm::Function::Create(_LLVM_fn_signature(0),
+    g_fn_callc0 = llvm::Function::Create(_LLVM_fn_signature(0, true),
                                          llvm::Function::ExternalLinkage,
                                          "FPyRuntime_CallC_LLVM",
                                          m);
-    g_fn_callc1 = llvm::Function::Create(_LLVM_fn_signature(1),
+    g_fn_callc1 = llvm::Function::Create(_LLVM_fn_signature(1, true),
                                          llvm::Function::ExternalLinkage,
                                          "FPyRuntime_CallC_LLVM1",
                                          m);
-    g_fn_callc2 = llvm::Function::Create(_LLVM_fn_signature(2),
+    g_fn_callc2 = llvm::Function::Create(_LLVM_fn_signature(2, true),
                                          llvm::Function::ExternalLinkage,
                                          "FPyRuntime_CallC_LLVM2",
                                          m);
-    g_fn_callc3 = llvm::Function::Create(_LLVM_fn_signature(3),
+    g_fn_callc3 = llvm::Function::Create(_LLVM_fn_signature(3, true),
                                          llvm::Function::ExternalLinkage,
                                          "FPyRuntime_CallC_LLVM3",
                                          m);
-    g_fn_callc4 = llvm::Function::Create(_LLVM_fn_signature(4),
+    g_fn_callc4 = llvm::Function::Create(_LLVM_fn_signature(4, true),
                                          llvm::Function::ExternalLinkage,
                                          "FPyRuntime_CallC_LLVM4",
                                          m);
-    g_fn_callc5 = llvm::Function::Create(_LLVM_fn_signature(5),
+    g_fn_callc5 = llvm::Function::Create(_LLVM_fn_signature(5, true),
                                          llvm::Function::ExternalLinkage,
                                          "FPyRuntime_CallC_LLVM5",
                                          m);
@@ -183,9 +192,23 @@ llvm::Module *LLVM_Initialize() {
     args2[8] = llvm::MDString::get(context, "");
     args2[9] = llvm::ConstantInt::get(int32ty, 0);
 
-    g_llvm_compilation_unit = llvm::MDNode::get(context, args2, 10);
+    g_llvm_compilation_unit = llvm::MDNode::get(context, llvm::ArrayRef<llvm::Value*>(args2, 10));
 
     g_llvm_module = m;
+
+    g_llvm_fpm = new llvm::FunctionPassManager(m);
+
+    /* The all important mem2reg pass, without it the other passes won't do much */
+    g_llvm_fpm->add(llvm::createPromoteMemoryToRegisterPass());
+    // Do simple "peephole" optimizations and bit-twiddling optzns.
+    g_llvm_fpm->add(llvm::createInstructionCombiningPass());
+    // Reassociate expressions.
+    g_llvm_fpm->add(llvm::createReassociatePass());
+    // Eliminate Common SubExpressions.
+    g_llvm_fpm->add(llvm::createGVNPass());
+    // Simplify the control flow graph (deleting unreachable blocks, etc).
+    g_llvm_fpm->add(llvm::createCFGSimplificationPass());
+    g_llvm_fpm->doInitialization();
 
     return m;
 }

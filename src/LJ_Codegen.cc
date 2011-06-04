@@ -228,24 +228,26 @@ jit_value_t TestIfFalse::_LJ_Codegen(jit_function_t func, Function *f) {
                                       m_args[0]->LJ_Codegen(func, f),
                                       Constant::GetBool(false)->LJ_Codegen(func, f));
     assert(eq_test);
+
     jit_insn_branch_if(func, eq_test, b->GetSuccessor(0)->LJ_GetLabel());
 }
 
 jit_value_t PrintItem::_LJ_Codegen(jit_function_t func, Function *f) {
-//    jit_insn_mark_offset(func, m_bytecode_offset);
+    jit_insn_mark_offset(func, m_bytecode_offset);
     return _LJ_Call(func, "FPyRuntime_PrintItem", (void*)&FPyRuntime_PrintItem, m_args[0]->LJ_Codegen(func, f));
 }
+
 jit_value_t PrintNewline::_LJ_Codegen(jit_function_t func, Function *f) {
-//    jit_insn_mark_offset(func, m_bytecode_offset);
+    jit_insn_mark_offset(func, m_bytecode_offset);
     return _LJ_Call(func, "FPyRuntime_PrintNewline", (void*)&FPyRuntime_PrintNewline);
 }
 
 jit_value_t BeginCatch_GetType::_LJ_Codegen(jit_function_t func, Function *f) {
     jit_insn_mark_offset(func, m_bytecode_offset);
-    jit_value_t exc = f->LJ_GetExceptionObject();
+    jit_value_t exc = f->LJ_GetCurrentBlock()->LJ_GetExceptionObject();
     if(exc == 0) {
         exc = jit_insn_thrown_exception(func);
-        f->LJ_SetExceptionObject(exc);
+        f->LJ_GetCurrentBlock()->LJ_SetExceptionObject(exc);
         _LJ_Call(func, "jit_exception_clear_last", (void*)&jit_exception_clear_last);
     }
 
@@ -256,10 +258,10 @@ jit_value_t BeginCatch_GetType::_LJ_Codegen(jit_function_t func, Function *f) {
 
 jit_value_t BeginCatch_GetValue::_LJ_Codegen(jit_function_t func, Function *f) {
     jit_insn_mark_offset(func, m_bytecode_offset);
-    jit_value_t exc = f->LJ_GetExceptionObject();
+    jit_value_t exc = f->LJ_GetCurrentBlock()->LJ_GetExceptionObject();
     if(exc == 0) {
         exc = jit_insn_thrown_exception(func);
-        f->LJ_SetExceptionObject(exc);
+        f->LJ_GetCurrentBlock()->LJ_SetExceptionObject(exc);
         _LJ_Call(func, "jit_exception_clear_last", (void*)&jit_exception_clear_last);
     }
 
@@ -268,10 +270,10 @@ jit_value_t BeginCatch_GetValue::_LJ_Codegen(jit_function_t func, Function *f) {
 
 jit_value_t BeginCatch_GetTraceback::_LJ_Codegen(jit_function_t func, Function *f) {
     jit_insn_mark_offset(func, m_bytecode_offset);
-    jit_value_t exc = f->LJ_GetExceptionObject();
+    jit_value_t exc = f->LJ_GetCurrentBlock()->LJ_GetExceptionObject();
     if(exc == 0) {
         exc = jit_insn_thrown_exception(func);
-        f->LJ_SetExceptionObject(exc);
+        f->LJ_GetCurrentBlock()->LJ_SetExceptionObject(exc);
         _LJ_Call(func, "jit_exception_clear_last", (void*)&jit_exception_clear_last);
     }
 
@@ -281,15 +283,20 @@ jit_value_t BeginCatch_GetTraceback::_LJ_Codegen(jit_function_t func, Function *
 
 jit_value_t ReRaise::_LJ_Codegen(jit_function_t func, Function *f) {
     jit_insn_mark_offset(func, m_bytecode_offset);
-    jit_value_t exc = f->LJ_GetExceptionObject();
+    jit_value_t exc = f->LJ_GetCurrentBlock()->LJ_GetExceptionObject();
     if(exc == 0) {
         exc = jit_insn_thrown_exception(func);
-        f->LJ_SetExceptionObject(exc);
-        _LJ_Call(func, "jit_exception_clear_last", (void*)&jit_exception_clear_last);
+        f->LJ_GetCurrentBlock()->LJ_SetExceptionObject(exc);
     }
 
-    _LJ_Call(func, "jit_exception_clear_last", (void*)&jit_exception_clear_last);
-    jit_insn_rethrow_unhandled(func);
+//    _LJ_Call(func, "jit_exception_set_last", (void*)&jit_exception_clear_last, exc);
+    
+    /* Should we unwind to a block in the same function? */
+    if(f->LJ_GetCurrentBlock()->GetUnwindBlock()) {
+        jit_insn_branch(func, f->LJ_GetCurrentBlock()->GetUnwindBlock()->LJ_GetLabel());
+    } else {
+        jit_insn_rethrow_unhandled(func);
+    }
     return 0;
 }
 

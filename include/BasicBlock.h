@@ -111,7 +111,29 @@ public:
     void LLVM_Codegen(llvm::Module *m);
 
     llvm::BasicBlock *LLVM_GetBlock(llvm::Function *func);
+    llvm::BasicBlock *LLVM_GetBlockForReRaise() {
+        return m_llvm_block_for_reraise;        
+    }
+    void LLVM_SetBlockForReRaise(llvm::BasicBlock *b) {
+            m_llvm_block_for_reraise = b;
+    }
 #endif
+
+    jit_value_t LJ_GetExceptionObject() {
+        return m_lj_exception_object;
+    }
+    void LJ_SetExceptionObject(jit_value_t exc) {
+        m_lj_exception_object = exc;
+    }
+#if defined(WITH_LLVM)
+    llvm::Value *LLVM_GetExceptionObject() {
+        return m_llvm_exception_object;
+    }
+    void LLVM_SetExceptionObject(llvm::Value *exc) {
+        m_llvm_exception_object = exc;
+    }
+#endif
+
 
 protected:
     char GetWart() {
@@ -146,9 +168,11 @@ private:
     BasicBlock *m_unwind_block;
 
     jit_label_t m_jit_label, m_jit_end_label;
+    jit_value_t m_lj_exception_object;
 
 #if defined(WITH_LLVM)
-    llvm::BasicBlock *m_llvm_block;
+    llvm::BasicBlock *m_llvm_block, *m_llvm_block_for_reraise;
+    llvm::Value *m_llvm_exception_object;
 #endif
 };
 

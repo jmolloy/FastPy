@@ -2,9 +2,11 @@
 #ifndef LLVM_SUPPORT_H
 #define LLVM_SUPPORT_H
 
+#include <llvm/PassManager.h>
+#include <llvm/Support/DebugLoc.h>
+#include <llvm/Transforms/Scalar.h>
 #include <llvm/Type.h>
 #include <llvm/Value.h>
-#include <llvm/Support/DebugLoc.h>
 
 #include <map>
 #include <utility>
@@ -27,6 +29,7 @@ extern llvm::Function *g_fn_callc0, *g_fn_callc1, *g_fn_callc2, *g_fn_callc3, *g
 extern llvm::Value *g_llvm_eh_exception, *g_llvm_eh_selector, *g_personality;
 extern llvm::Value *g_cxa_begin_catch, *g_cxa_end_catch, *g_unwind_resume_or_rethrow;
 extern llvm::MDNode *g_llvm_compilation_unit;
+extern llvm::FunctionPassManager *g_llvm_fpm;
 
 #endif
 #endif

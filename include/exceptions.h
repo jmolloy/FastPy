@@ -53,5 +53,14 @@ public:
 
 };
 
+class ValueError : public RuntimeError {
+public:
+    ValueError(const std::string &desc) :
+        RuntimeError("ValueError", desc) {
+        m_traceback->AddTraceFromHere();
+    }
+
+};
+
 
 #endif

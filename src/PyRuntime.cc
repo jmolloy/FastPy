@@ -235,6 +235,7 @@ void PopulateDictWithBuiltins(Dict *dict) {
     dict->Set(Constant::GetString("RuntimeError"), Type::For(new RuntimeError("")));
     dict->Set(Constant::GetString("NotImplementedError"), Type::For(new NotImplementedError("")));
     dict->Set(Constant::GetString("KeyError"), Type::For(new KeyError("")));
+    dict->Set(Constant::GetString("ValueError"), Type::For(new ValueError("")));
     dict->Set(Constant::GetString("StandardError"), Type::For(new StandardError("")));
     dict->Set(Constant::GetString("TypeError"), Type::For(new TypeError("")));
 }

@@ -143,6 +143,7 @@ Object *Marshal::ReadObject(std::istream &is, Errors &e) {
 
         case TYPE_STRING:
         case TYPE_INTERNED:
+        case TYPE_STRINGREF:
             return Constant::GetString(ReadString(is, ReadLong(is)));
 
         case TYPE_UNICODE: {
@@ -284,6 +285,7 @@ Object *Marshal::ReadObject(std::istream &is, Errors &e) {
 
         default:
             e.Error("Bad marshal data (unknown type code)");
+            printf("XXX: %d", type);
             return NULL;
     }
 

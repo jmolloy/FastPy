@@ -27,7 +27,7 @@ extern llvm::ExecutionEngine *g_llvm_engine;
 
 Function::Function(std::string name, Code *code, Module *module) :
     m_name(name), m_code(code), m_module(module), m_jit_function(0),
-    m_current_block(0), m_lj_exception_object(NULL), m_llvm_function(0), m_llvm_exception_object(0) {
+    m_current_block(0), m_llvm_function(0) {
     m_entry_block = new BasicBlock(this);
 
 #if 0
@@ -101,9 +101,12 @@ llvm::Function *Function::LLVM_Codegen(llvm::Module *m) {
         (*it)->LLVM_Codegen(m);
     }
 
+     g_llvm_fpm->run(*m_llvm_function);
+
     if(db_print(this, DB_PRINT_LLVM)) {
         std::cout << "*** Function " << m_name << " - LLVM\n";
-        m_llvm_function->dump();
+//        m_llvm_function->dump();
+        m->dump();
         std::cout << "*** End Function " << m_name << "\n";
     }
 
@@ -191,8 +194,8 @@ jit_function_t Function::LJ_Codegen(jit_context_t ctx) {
                 jit_insn_branch(m_jit_function, (*it)->GetUnwindBlock()->LJ_GetLabel());
                 jit_insn_label(m_jit_function, &lab);
             }
-            jit_insn_rethrow_unhandled(m_jit_function);
         }
+        jit_insn_rethrow_unhandled(m_jit_function);
 
     }
 
@@ -202,6 +205,7 @@ jit_function_t Function::LJ_Codegen(jit_context_t ctx) {
         std::cout << "*** End Function " << m_name << "\n";
     }
 
+    jit_function_set_optimization_level(m_jit_function, jit_function_get_max_optimization_level());
     jit_function_compile(m_jit_function);
 
     if(db_print(this, DB_PRINT_ASM)) {
